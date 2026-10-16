@@ -110,7 +110,7 @@ PROGRAMS = {0: "standby", 1: "reduced", 2: "normal", 3: "comfort", 4: "external"
 
 
 def program_name(code):
-    """Active program register of a circuit (0x?301) -> name; 0 = DHW only, 5 = off, both are 'standby' for the API."""
+    """Active program of a circuit (byte 1 of the status block 0x?500) -> name; 0 and 5 are 'standby' for the API."""
     try:
         return PROGRAMS.get(int(float(code)), "unknown")
     except (TypeError, ValueError):

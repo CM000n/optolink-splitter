@@ -491,15 +491,19 @@ for n, B in HK_BASE.items():
         **H,
         **TEMP,
     )
+    # active program = phase of the circuit, byte 1 of the status block (0 standby, 1 reduced, 2 normal; 3 = comfort
+    # is not verified). It follows the time program, unlike register 0x301, which only holds the selected operating
+    # program (2 = permanently normal, 3 = time program). Read together with the set point above (same block).
     poll(
         "sensor",
         p + "programm",
-        ("OFTEN", B + 0x301, 1, 1),
+        ("OFTEN", B + 0x500, 22, "b:1:1", 1),
         name="Programm",
         icon="mdi:format-list-bulleted-type",
         value_template=PROGRAM_TEXT,
         **H,
     )
+    hidden(p + "betriebsprogramm_roh", ("OFTEN", B + 0x301, 1, 1), name="Betriebsprogramm (Rohwert)", **H)
     poll(
         "binary_sensor",
         p + "pumpe",

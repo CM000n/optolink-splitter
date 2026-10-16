@@ -71,12 +71,12 @@ M1 (`0x2000`) is unused here. Offsets relative to the base:
 
 | Offset | Content |
 |---|---|
-| `0x301` | active program: 0 = DHW only, 1 = reduced, 2 = normal, 5 = off |
+| `0x301` | selected operating program, not the phase: 2 = permanently normal, 3 = time program (0 = DHW only, 5 = off); the active program is in the status block |
 | `0x302` / `0x303` | eco ("Spar") / party flag, writable (only effective while the circuit heats in schedule mode) |
 | `0x306` / `0x307` / `0x308` | normal / reduced / comfort room set point, 1 byte in deg C, writable |
 | `0x309` / `0x311` | holiday start / end, 8 byte BCD each (`1970-01-01` = unset), writable |
 | `0x323` | operating mode: 0 standby, 1 DHW only, 2 heating + DHW, 3 forced reduced, 4 forced normal, writable |
-| `0x500` | status block; bytes 12-13 are the set point of the active program (x0.1) |
+| `0x500` | status block; byte 1 = **active program** (0 standby, 1 reduced, 2 normal; follows the time program), bytes 12-13 = set point of the active program (x0.1) |
 | `0x544` | flow set point of the controller (x0.1) |
 | `0x549` | frost protection |
 | `0x7D3` / `0x7D4` | heating curve slope (x0.1) / level, writable |
