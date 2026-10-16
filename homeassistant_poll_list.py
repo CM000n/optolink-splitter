@@ -80,7 +80,7 @@ TEXT_TO_MODE = (
     "'Dauernd reduziert':3,'Dauernd normal':4} %}{{ m[value] }}"
 )
 PROGRAM_TEXT = (
-    "{% set m = {'0':'standby','1':'reduced','2':'normal','3':'comfort','4':'external','5':'standby'} %}"
+    "{% set m = {'0':'standby','1':'reduced','2':'normal','3':'normal','5':'standby'} %}"
     "{{ m.get(value | string | trim, 'unknown') }}"
 )
 HVAC_FROM_MODE = (
@@ -491,9 +491,10 @@ for n, B in HK_BASE.items():
         **H,
         **TEMP,
     )
-    # active program = phase of the circuit, byte 1 of the status block (0 standby, 1 reduced, 2 normal; 3 = comfort
-    # is not verified). It follows the time program, unlike register 0x301, which only holds the selected operating
-    # program (2 = permanently normal, 3 = time program). Read together with the set point above (same block).
+    # active program = phase of the circuit, byte 1 of the status block (0 standby, 1 reduced, 2 normal, 3 permanently
+    # normal). It follows the time program, unlike register 0x301, which only holds the selected operating program
+    # (1 = permanently reduced, 2 = permanently normal, 3 = time program). Comfort is not a program: it shows as the party
+    # flag (0x303) and the comfort set point. Read together with the set point above (same block).
     poll(
         "sensor",
         p + "programm",
@@ -584,7 +585,7 @@ for n, B in HK_BASE.items():
         ("reduziert", "Programm Reduziert", "mdi:thermometer-low"),
         ("standby", "Programm Standby", "mdi:power-standby"),
     ):
-        codes = {"normal": "['2']", "reduziert": "['1']", "standby": "['0', '5']"}[key]
+        codes = {"normal": "['2', '3']", "reduziert": "['1']", "standby": "['0', '5']"}[key]
         derived(
             "binary_sensor",
             f"{p}programm_{key}",

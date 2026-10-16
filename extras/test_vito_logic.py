@@ -146,7 +146,7 @@ class Misc(unittest.TestCase):
 
     def test_program_name(self):
         self.assertEqual([v.program_name(c) for c in ("0", "1", "2", "3", "4", "5", "9", "x", None)],
-                         ["standby", "reduced", "normal", "comfort", "external", "standby", "unknown", "unknown", "unknown"])
+                         ["standby", "reduced", "normal", "normal", "unknown", "standby", "unknown", "unknown", "unknown"])
 
     def test_program_register(self):
         self.assertEqual(v.program_register_offset("normal", False), 0x306)

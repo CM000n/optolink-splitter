@@ -71,12 +71,13 @@ M1 (`0x2000`) is unused here. Offsets relative to the base:
 
 | Offset | Content |
 |---|---|
-| `0x301` | selected operating program, not the phase: 2 = permanently normal, 3 = time program (0 = DHW only, 5 = off); the active program is in the status block |
-| `0x302` / `0x303` | eco ("Spar") / party flag, writable (only effective while the circuit heats in schedule mode) |
+| `0x301` | selected operating program, not the phase: 1 = permanently reduced, 2 = permanently normal, 3 = time program (0 = DHW only, 5 = off); the active program is in the status block |
+| `0x302` / `0x303` | eco ("Spar") flag, writable / party = comfort **status**, set by the controller (a write is cleared again within seconds) |
+| `0x330` | comfort command: 1 = comfort on (comfort set point `0x308` applies), 0 = off. This is what the ViCare app writes, writable |
 | `0x306` / `0x307` / `0x308` | normal / reduced / comfort room set point, 1 byte in deg C, writable |
 | `0x309` / `0x311` | holiday start / end, 8 byte BCD each (`1970-01-01` = unset), writable |
-| `0x323` | operating mode: 0 standby, 1 DHW only, 2 heating + DHW, 3 forced reduced, 4 forced normal, writable |
-| `0x500` | status block; byte 1 = **active program** (0 standby, 1 reduced, 2 normal; follows the time program), bytes 12-13 = set point of the active program (x0.1) |
+| `0x323` | operating mode: 0 standby, 1 DHW only, 2 heating + DHW (time program), 3 permanently reduced, 4 permanently normal, writable (the app writes this for "Dauernd reduziert" / "Dauernd Tagbetrieb") |
+| `0x500` | status block; byte 1 = **active program** (0 standby, 1 reduced, 2 normal, 3 permanently normal; follows the time program; comfort has no value of its own: byte 1 stays 2 and the party flag is 1), bytes 12-13 = set point of the active program (x0.1) |
 | `0x544` | flow set point of the controller (x0.1) |
 | `0x549` | frost protection |
 | `0x7D3` / `0x7D4` | heating curve slope (x0.1) / level, writable |

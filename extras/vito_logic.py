@@ -106,7 +106,7 @@ def parse_vdatetime(text):
     return None if value.year <= 1970 else value
 
 
-PROGRAMS = {0: "standby", 1: "reduced", 2: "normal", 3: "comfort", 4: "external", 5: "standby"}
+PROGRAMS = {0: "standby", 1: "reduced", 2: "normal", 3: "normal", 5: "standby"}   # 3 = permanently normal, comfort is the party flag
 
 
 def program_name(code):
