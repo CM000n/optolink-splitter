@@ -10,7 +10,7 @@
    Provides
    * burner statistics (starts last hour / today, run time today, last run / pause, average run time, cycling)
    * run time today of the pumps, heating curve target and deviation, solar temperature difference
-   * time program state of the heating circuits, DHW and circulation, active program, climate preset
+   * time program state of the heating circuits, DHW and circulation, active heating mode (as in the ViCare app), climate preset
    * holiday program state and "end holiday"
    * climate set point and preset commands (writes the register of the active program, party / eco flags)
    * boost and permanent operation of the four time programs (rewrites the time program, original is saved and
@@ -95,7 +95,7 @@ INPUTS = [  # splitter topics we need
     "interne_kesselpumpe", "warmwasser_ladepumpe", "zirkulationspumpe", "solarpumpe",
 ] + [f"hk{n}_{x}" for n in (1, 2) for x in (
     "pumpe", "vorlauftemperatur", "raumsolltemperatur_aktuell", "normaltemperatur", "reduzierte_temperatur",
-    "komforttemperatur", "heizkurve_steigung", "heizkurve_niveau", "programm", "partybetrieb", "sparbetrieb",
+    "komforttemperatur", "heizkurve_steigung", "heizkurve_niveau", "betriebsart", "programm", "partybetrieb", "sparbetrieb",
     "zeitprogramm_roh_1", "zeitprogramm_roh_2")] + [
     f"{s}_zeitprogramm_roh_{i}" for s in ("warmwasser", "zirkulation") for i in (1, 2)]
 
@@ -192,6 +192,8 @@ def entity_defs():
         add("sensor", f"{hk}_vorlauf_abweichung_zur_heizkurve", device, "Vorlauf Abweichung zur Heizkurve",
             icon="mdi:chart-bell-curve-cumulative", unit_of_measurement="K", state_class="measurement",
             suggested_display_precision=1, state_topic=f"{EXT}/{hk}_vorlauf_abweichung_zur_heizkurve")
+        add("sensor", f"{hk}_programm", device, "Aktiver Heizmodus", icon="mdi:format-list-bulleted-type",
+            state_topic=f"{EXT}/{hk}_programm")
         add("text", f"{hk}_name", device, "Name", icon="mdi:rename-outline", entity_category="config",
             state_topic=f"{EXT}/{hk}_name", command_topic=f"{EXT}/{hk}_name/set", max=40)
     # time programs + overrides
@@ -723,6 +725,7 @@ class Extras:
             for hk in ("hk1", "hk2"):
                 self.curve(hk)
                 self.preset(hk)
+                self.heizmodus(hk)
         if name in ("solar_kollektortemperatur", "solar_speichertemperatur"):
             k, s = self.num("solar_kollektortemperatur"), self.num("solar_speichertemperatur")
             if k is not None and s is not None:
@@ -847,6 +850,18 @@ class Extras:
         self.pub(f"{EXT}/{hk}_preset", logic.preset_from(program, self.values.get(f"{hk}_partybetrieb") == "ON",
                                                         self.values.get(f"{hk}_sparbetrieb") == "ON"))
 
+    def heizmodus(self, hk):
+        """"Aktiver Heizmodus" like the ViCare app: operating mode, phase, comfort / eco and the end of the current phase."""
+        mode, program = self.values.get(f"{hk}_betriebsart"), self.values.get(f"{hk}_programm")
+        if mode is None or program is None:
+            return
+        raw = self.raw_week(hk)
+        until = logic.next_switch(logic.week_to_slots(raw), datetime.now()) if raw else None
+        text = logic.heizmodus_text(mode, program, self.values.get(f"{hk}_partybetrieb") == "ON",
+                                    self.values.get(f"{hk}_sparbetrieb") == "ON", until)
+        if text:
+            self.pub(f"{EXT}/{hk}_programm", text)
+
     def holiday(self, now):
         start = logic.parse_vdatetime(self.values.get("urlaubsprogramm_beginn", ""))
         end = logic.parse_vdatetime(self.values.get("urlaubsprogramm_ende", ""))
@@ -887,6 +902,8 @@ class Extras:
                 now = datetime.now()
                 for key in SCHEDULES:
                     self.schedule_state(key, now)
+                for hk in ("hk1", "hk2"):
+                    self.heizmodus(hk)
                 self.holiday(now)
                 self.check_overrides()
                 if time.time() - last_sync > SYNC_INTERVAL:

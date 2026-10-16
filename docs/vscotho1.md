@@ -76,7 +76,7 @@ M1 (`0x2000`) is unused here. Offsets relative to the base:
 | `0x330` / `0x331` | comfort / eco **command**: 1 = on, 0 = off (comfort uses the set point `0x308`). This is what the ViCare app writes, writable. Activating one cancels the other; eco only holds in a normal phase of the time program (the app shows its tile only then) |
 | `0x306` / `0x307` / `0x308` | normal / reduced / comfort room set point, 1 byte in deg C, writable |
 | `0x309` / `0x311` | holiday start / end, 8 byte BCD each (`1970-01-01` = unset), writable |
-| `0x323` | operating mode: 0 standby, 1 DHW only, 2 heating + DHW (time program), 3 permanently reduced, 4 permanently normal, writable (the app writes this for "Dauernd reduziert" / "Dauernd Tagbetrieb") |
+| `0x323` | operating mode (select "Betriebsart", wording as in the ViCare app): 0 "Aus", 1 "Nur Warmwasser aktiv", 2 "Heizung & Warmwasser aktiv" (time program), 3 "Dauernd reduziert", 4 "Dauernd Tagbetrieb", writable |
 | `0x500` | status block; byte 1 = **active program** (0 standby, 1 reduced, 2 normal, 3 permanently normal; follows the time program; comfort has no value of its own: byte 1 stays 2 and the party flag is 1), bytes 12-13 = set point of the active program (x0.1) |
 | `0x544` | flow set point of the controller (x0.1) |
 | `0x549` | frost protection |
@@ -141,6 +141,11 @@ the ViCare integration. Highlights:
   mode: set point 22 °C, party flag on after the next poll, "home" switches it off again. Eco was recorded from the app (it is taken
   back within seconds in a reduced phase). A direct write of the status flags `0x?302` / `0x?303` does not stick. Not tested in
   "permanently normal" / "permanently reduced" mode.
+* "Aktiver Heizmodus" (`sensor.vito_hkN_programm`, built by `extras/vito_extras.py`) shows what the ViCare app shows: "Aus" (mode off / DHW only),
+  "Normal + Zeitprogramm (pausiert)" / "Reduziert + Zeitprogramm (pausiert)" (permanent modes), "Komfortbetrieb + Zeitprogramm (pausiert)"
+  (comfort), "Zeitprogramm + Normal bis 21:00" / "Zeitprogramm + Reduziert bis 06:00" (time program: phase from the status block, end from the
+  circuit's time program). The wording for eco ("Sparbetrieb + Zeitprogramm (pausiert)") is assumed. The raw phase code stays available as the hidden
+  datapoint `hkN_programm` and drives the "Heizphase" binary sensors and the climate preset.
 * Everything the ViCare app writes can be recorded with `tools/mqtt_timeline.py` (Vitoconnect requests next to polled registers);
   this is how the registers above were found.
 

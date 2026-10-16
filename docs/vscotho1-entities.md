@@ -106,16 +106,16 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 
 | Entity | Name | Source |
 |---|---|---|
-| `binary_sensor.vito_hk1_betriebsart_dauernd_normal` | Betriebsart Dauernd Normal | splitter |
-| `binary_sensor.vito_hk1_betriebsart_dauernd_reduziert` | Betriebsart Dauernd Reduziert | splitter |
-| `binary_sensor.vito_hk1_betriebsart_heizen_warmwasser` | Betriebsart Warmwasser und Heizung | splitter |
-| `binary_sensor.vito_hk1_betriebsart_standby` | Betriebsart Standby | splitter |
-| `binary_sensor.vito_hk1_betriebsart_warmwasser` | Betriebsart Warmwasser | splitter |
+| `binary_sensor.vito_hk1_betriebsart_dauernd_normal` | Betriebsart Dauernd Tagbetrieb | splitter |
+| `binary_sensor.vito_hk1_betriebsart_dauernd_reduziert` | Betriebsart Dauernd reduziert | splitter |
+| `binary_sensor.vito_hk1_betriebsart_heizen_warmwasser` | Betriebsart Heizung & Warmwasser aktiv | splitter |
+| `binary_sensor.vito_hk1_betriebsart_standby` | Betriebsart Aus | splitter |
+| `binary_sensor.vito_hk1_betriebsart_warmwasser` | Betriebsart Nur Warmwasser aktiv | splitter |
 | `binary_sensor.vito_hk1_frostschutz` | Frostschutz | splitter |
 | `binary_sensor.vito_hk1_partybetrieb` | Partybetrieb (Komfort) | splitter |
-| `binary_sensor.vito_hk1_programm_normal` | Programm Normal | splitter |
-| `binary_sensor.vito_hk1_programm_reduziert` | Programm Reduziert | splitter |
-| `binary_sensor.vito_hk1_programm_standby` | Programm Standby | splitter |
+| `binary_sensor.vito_hk1_programm_normal` | Heizphase Normal | splitter |
+| `binary_sensor.vito_hk1_programm_reduziert` | Heizphase Reduziert | splitter |
+| `binary_sensor.vito_hk1_programm_standby` | Heizphase Aus | splitter |
 | `binary_sensor.vito_hk1_pumpe` | Heizkreisumwälzpumpe | splitter |
 | `binary_sensor.vito_hk1_sparbetrieb` | Sparbetrieb (Eco) | splitter |
 | `binary_sensor.vito_hk1_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
@@ -129,7 +129,7 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `number.vito_hk1_normaltemperatur` | Normaltemperatur | splitter |
 | `number.vito_hk1_reduzierte_temperatur` | Reduzierte Temperatur | splitter |
 | `select.vito_hk1_betriebsart` | Betriebsart | splitter |
-| `sensor.vito_hk1_programm` | Programm | splitter |
+| `sensor.vito_hk1_programm` | Aktiver Heizmodus | extras |
 | `sensor.vito_hk1_pumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
 | `sensor.vito_hk1_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | splitter |
 | `sensor.vito_hk1_soll_vorlauftemperatur_heizkurve` | Soll-Vorlauftemperatur (Heizkurve) | extras |
@@ -144,16 +144,16 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 
 | Entity | Name | Source |
 |---|---|---|
-| `binary_sensor.vito_hk2_betriebsart_dauernd_normal` | Betriebsart Dauernd Normal | splitter |
-| `binary_sensor.vito_hk2_betriebsart_dauernd_reduziert` | Betriebsart Dauernd Reduziert | splitter |
-| `binary_sensor.vito_hk2_betriebsart_heizen_warmwasser` | Betriebsart Warmwasser und Heizung | splitter |
-| `binary_sensor.vito_hk2_betriebsart_standby` | Betriebsart Standby | splitter |
-| `binary_sensor.vito_hk2_betriebsart_warmwasser` | Betriebsart Warmwasser | splitter |
+| `binary_sensor.vito_hk2_betriebsart_dauernd_normal` | Betriebsart Dauernd Tagbetrieb | splitter |
+| `binary_sensor.vito_hk2_betriebsart_dauernd_reduziert` | Betriebsart Dauernd reduziert | splitter |
+| `binary_sensor.vito_hk2_betriebsart_heizen_warmwasser` | Betriebsart Heizung & Warmwasser aktiv | splitter |
+| `binary_sensor.vito_hk2_betriebsart_standby` | Betriebsart Aus | splitter |
+| `binary_sensor.vito_hk2_betriebsart_warmwasser` | Betriebsart Nur Warmwasser aktiv | splitter |
 | `binary_sensor.vito_hk2_frostschutz` | Frostschutz | splitter |
 | `binary_sensor.vito_hk2_partybetrieb` | Partybetrieb (Komfort) | splitter |
-| `binary_sensor.vito_hk2_programm_normal` | Programm Normal | splitter |
-| `binary_sensor.vito_hk2_programm_reduziert` | Programm Reduziert | splitter |
-| `binary_sensor.vito_hk2_programm_standby` | Programm Standby | splitter |
+| `binary_sensor.vito_hk2_programm_normal` | Heizphase Normal | splitter |
+| `binary_sensor.vito_hk2_programm_reduziert` | Heizphase Reduziert | splitter |
+| `binary_sensor.vito_hk2_programm_standby` | Heizphase Aus | splitter |
 | `binary_sensor.vito_hk2_pumpe` | Heizkreisumwälzpumpe | splitter |
 | `binary_sensor.vito_hk2_sparbetrieb` | Sparbetrieb (Eco) | splitter |
 | `binary_sensor.vito_hk2_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
@@ -167,7 +167,7 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `number.vito_hk2_normaltemperatur` | Normaltemperatur | splitter |
 | `number.vito_hk2_reduzierte_temperatur` | Reduzierte Temperatur | splitter |
 | `select.vito_hk2_betriebsart` | Betriebsart | splitter |
-| `sensor.vito_hk2_programm` | Programm | splitter |
+| `sensor.vito_hk2_programm` | Aktiver Heizmodus | extras |
 | `sensor.vito_hk2_pumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
 | `sensor.vito_hk2_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | splitter |
 | `sensor.vito_hk2_soll_vorlauftemperatur_heizkurve` | Soll-Vorlauftemperatur (Heizkurve) | extras |

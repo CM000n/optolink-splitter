@@ -3,7 +3,7 @@
 Time program format of the Vitotronic: 7 days (Monday first) x 8 byte = 4 pairs (on, off) per day.
 A byte is hour * 8 + minute / 10, 24:00 is 0xC0, 0xFF marks an unused entry.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 
 MINUTES_PER_DAY = 1440
 UNUSED = 0xFF
@@ -77,6 +77,47 @@ def is_active(week, when):
     day = week[when.weekday() * 8: when.weekday() * 8 + 8]
     minute = when.hour * 60 + when.minute
     return any(start <= minute < end for start, end in decode_day(day))
+
+
+def next_switch(week_slots, now):
+    """Time of the next change of the weekly program after 'now' (7 lists of (start, end) minutes, Monday first), or None
+    when the program never changes (no period at all, or on all day long). A period that ends at 24:00 and one that starts
+    at 00:00 of the next day are one period."""
+    edges = set()
+    for day, slots in enumerate(week_slots):
+        for start, end in slots:
+            for minute in (start, end):
+                edges ^= {(day * MINUTES_PER_DAY + minute) % (7 * MINUTES_PER_DAY)}   # a touching end and start cancel out
+    if not edges:
+        return None
+    week_minutes = 7 * MINUTES_PER_DAY
+    current = now.weekday() * MINUTES_PER_DAY + now.hour * 60 + now.minute
+    ahead = min((edge - current) % week_minutes or week_minutes for edge in edges)
+    return now.replace(second=0, microsecond=0) + timedelta(minutes=ahead)
+
+
+def heizmodus_text(mode, phase, party, eco, until):
+    """Text of the ViCare app's "Aktiver Heizmodus" for a heating circuit.
+    mode: operating mode register 0x?323 (0 off, 1 DHW only, 2 time program, 3 permanently reduced, 4 permanently normal),
+    phase: byte 1 of the status block (0 off, 1 reduced, 2 normal, 3 permanently normal), until: end of the current phase."""
+    try:
+        mode, phase = int(float(mode)), int(float(phase))
+    except (TypeError, ValueError):
+        return None
+    if mode in (0, 1):
+        return "Aus"
+    if party:
+        return "Komfortbetrieb + Zeitprogramm (pausiert)"
+    if eco:
+        return "Sparbetrieb + Zeitprogramm (pausiert)"
+    if mode == 3:
+        return "Reduziert + Zeitprogramm (pausiert)"
+    if mode == 4:
+        return "Normal + Zeitprogramm (pausiert)"
+    name = {0: "Aus", 1: "Reduziert", 2: "Normal", 3: "Normal"}.get(phase)
+    if name is None:
+        return None
+    return f"Zeitprogramm + {name}" + (f" bis {until:%H:%M}" if until else "")
 
 
 def format_slots(day):

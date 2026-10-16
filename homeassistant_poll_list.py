@@ -69,19 +69,21 @@ def set_topic(dp):
 # --------------------------------------------------------------------------------------------------------------
 # value templates
 # --------------------------------------------------------------------------------------------------------------
-MODE_OPTIONS = ["Standby", "Nur Warmwasser", "Heizen und Warmwasser", "Dauernd reduziert", "Dauernd normal"]
+MODE_OPTIONS = [
+    "Aus",
+    "Nur Warmwasser aktiv",
+    "Heizung & Warmwasser aktiv",
+    "Dauernd reduziert",
+    "Dauernd Tagbetrieb",
+]  # as in the ViCare app
 MODE_TO_TEXT = (
-    "{% set m = {'0':'Standby','1':'Nur Warmwasser','2':'Heizen und Warmwasser',"
-    "'3':'Dauernd reduziert','4':'Dauernd normal'} %}"
+    "{% set m = {'0':'Aus','1':'Nur Warmwasser aktiv','2':'Heizung & Warmwasser aktiv',"
+    "'3':'Dauernd reduziert','4':'Dauernd Tagbetrieb'} %}"
     "{{ m.get(value | string | trim, 'Unbekannt (' ~ value ~ ')') }}"
 )
 TEXT_TO_MODE = (
-    "{% set m = {'Standby':0,'Nur Warmwasser':1,'Heizen und Warmwasser':2,"
-    "'Dauernd reduziert':3,'Dauernd normal':4} %}{{ m[value] }}"
-)
-PROGRAM_TEXT = (
-    "{% set m = {'0':'standby','1':'reduced','2':'normal','3':'normal','5':'standby'} %}"
-    "{{ m.get(value | string | trim, 'unknown') }}"
+    "{% set m = {'Aus':0,'Nur Warmwasser aktiv':1,'Heizung & Warmwasser aktiv':2,"
+    "'Dauernd reduziert':3,'Dauernd Tagbetrieb':4} %}{{ m[value] }}"
 )
 HVAC_FROM_MODE = (
     "{% set m = {'0':'off','1':'off','2':'auto','3':'off','4':'heat'} %}{{ m.get(value | string | trim, 'off') }}"
@@ -491,19 +493,12 @@ for n, B in HK_BASE.items():
         **H,
         **TEMP,
     )
-    # active program = phase of the circuit, byte 1 of the status block (0 standby, 1 reduced, 2 normal, 3 permanently
-    # normal). It follows the time program, unlike register 0x301, which only holds the selected operating program
-    # (1 = permanently reduced, 2 = permanently normal, 3 = time program). Comfort is not a program: it shows as the party
-    # flag (0x303) and the comfort set point. Read together with the set point above (same block).
-    poll(
-        "sensor",
-        p + "programm",
-        ("OFTEN", B + 0x500, 22, "b:1:1", 1),
-        name="Programm",
-        icon="mdi:format-list-bulleted-type",
-        value_template=PROGRAM_TEXT,
-        **H,
-    )
+    # phase of the circuit = byte 1 of the status block (0 off, 1 reduced, 2 normal, 3 permanently normal). It follows the
+    # time program, unlike register 0x301, which only holds the selected operating program (1 = permanently reduced,
+    # 2 = permanently normal, 3 = time program). Comfort is not a phase: it shows as the party flag (0x303) and the
+    # comfort set point. Read together with the set point above (same block). Hidden: the entity "Aktiver Heizmodus"
+    # (text like the ViCare app) is built from this, the operating mode and the time program by extras/vito_extras.py.
+    hidden(p + "programm", ("OFTEN", B + 0x500, 22, "b:1:1", 1), name="Programm (Phase, Rohwert)", **H)
     hidden(p + "betriebsprogramm_roh", ("OFTEN", B + 0x301, 1, 1), name="Betriebsprogramm (Rohwert)", **H)
     poll(
         "binary_sensor",
@@ -564,11 +559,11 @@ for n, B in HK_BASE.items():
         **H,
     )
     for code, key, label, icon in (
-        (0, "standby", "Betriebsart Standby", "mdi:power-standby"),
-        (1, "warmwasser", "Betriebsart Warmwasser", "mdi:water-boiler"),
-        (2, "heizen_warmwasser", "Betriebsart Warmwasser und Heizung", "mdi:home-thermometer"),
-        (3, "dauernd_reduziert", "Betriebsart Dauernd Reduziert", "mdi:hand-back-right-outline"),
-        (4, "dauernd_normal", "Betriebsart Dauernd Normal", "mdi:hand-back-right-outline"),
+        (0, "standby", "Betriebsart Aus", "mdi:power-standby"),
+        (1, "warmwasser", "Betriebsart Nur Warmwasser aktiv", "mdi:water-boiler"),
+        (2, "heizen_warmwasser", "Betriebsart Heizung & Warmwasser aktiv", "mdi:home-thermometer"),
+        (3, "dauernd_reduziert", "Betriebsart Dauernd reduziert", "mdi:hand-back-right-outline"),
+        (4, "dauernd_normal", "Betriebsart Dauernd Tagbetrieb", "mdi:hand-back-right-outline"),
     ):
         derived(
             "binary_sensor",
@@ -581,9 +576,9 @@ for n, B in HK_BASE.items():
             **H,
         )
     for key, label, icon in (
-        ("normal", "Programm Normal", "mdi:thermometer"),
-        ("reduziert", "Programm Reduziert", "mdi:thermometer-low"),
-        ("standby", "Programm Standby", "mdi:power-standby"),
+        ("normal", "Heizphase Normal", "mdi:thermometer"),
+        ("reduziert", "Heizphase Reduziert", "mdi:thermometer-low"),
+        ("standby", "Heizphase Aus", "mdi:power-standby"),
     ):
         codes = {"normal": "['2', '3']", "reduziert": "['1']", "standby": "['0', '5']"}[key]
         derived(

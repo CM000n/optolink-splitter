@@ -155,5 +155,44 @@ class Misc(unittest.TestCase):
         self.assertEqual(v.program_register_offset("standby", False), 0x306)
 
 
+class HeizmodusTests(unittest.TestCase):
+    WEEK = [[(360, 1260)]] * 7                      # every day 06:00-21:00
+
+    def test_next_switch_inside_and_outside_a_period(self):
+        mon = datetime(2026, 10, 12)                # a Monday
+        self.assertEqual(v.next_switch(self.WEEK, mon.replace(hour=20, minute=12)), mon.replace(hour=21))
+        self.assertEqual(v.next_switch(self.WEEK, mon.replace(hour=21, minute=45)), datetime(2026, 10, 13, 6))
+        self.assertEqual(v.next_switch(self.WEEK, mon.replace(hour=21)), datetime(2026, 10, 13, 6))
+        self.assertEqual(v.next_switch(self.WEEK, mon.replace(hour=5, minute=59, second=30)), mon.replace(hour=6))
+
+    def test_next_switch_wraps_around_the_week_and_ignores_midnight(self):
+        week = [[] for _ in range(7)]
+        week[2] = [(1200, 1440)]                    # Wed 20:00-24:00
+        week[3] = [(0, 120)]                        # Thu 00:00-02:00 continues the evening
+        wed = datetime(2026, 10, 14)
+        self.assertEqual(v.next_switch(week, wed.replace(hour=22)), datetime(2026, 10, 15, 2))
+        self.assertEqual(v.next_switch(week, wed.replace(hour=2)), wed.replace(hour=20))
+        self.assertEqual(v.next_switch(week, datetime(2026, 10, 15, 3)), datetime(2026, 10, 21, 20))   # next Wednesday
+
+    def test_next_switch_without_changes(self):
+        self.assertIsNone(v.next_switch([[] for _ in range(7)], datetime(2026, 10, 12, 12)))
+        self.assertIsNone(v.next_switch([[(0, 1440)]] * 7, datetime(2026, 10, 12, 12)))
+
+    def test_heizmodus_text_like_the_app(self):
+        until = datetime(2026, 10, 12, 21)
+        self.assertEqual(v.heizmodus_text(0, 0, False, False, None), "Aus")
+        self.assertEqual(v.heizmodus_text("1", "0", False, False, None), "Aus")
+        self.assertEqual(v.heizmodus_text(4, 3, False, False, until), "Normal + Zeitprogramm (pausiert)")
+        self.assertEqual(v.heizmodus_text(3, 1, False, False, until), "Reduziert + Zeitprogramm (pausiert)")
+        self.assertEqual(v.heizmodus_text(2, 2, False, False, until), "Zeitprogramm + Normal bis 21:00")
+        self.assertEqual(v.heizmodus_text(2, 1, False, False, until), "Zeitprogramm + Reduziert bis 21:00")
+        self.assertEqual(v.heizmodus_text(2, 1, False, False, None), "Zeitprogramm + Reduziert")
+        self.assertEqual(v.heizmodus_text(2, 2, True, False, until), "Komfortbetrieb + Zeitprogramm (pausiert)")
+        self.assertEqual(v.heizmodus_text(2, 1, False, True, until), "Sparbetrieb + Zeitprogramm (pausiert)")
+        self.assertEqual(v.heizmodus_text(1, 0, True, False, None), "Aus")         # off wins over comfort
+        self.assertIsNone(v.heizmodus_text(None, 2, False, False, until))
+        self.assertIsNone(v.heizmodus_text(2, 9, False, False, until))
+
+
 if __name__ == "__main__":
     unittest.main()
