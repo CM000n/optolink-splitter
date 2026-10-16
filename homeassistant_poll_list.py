@@ -71,7 +71,7 @@ MODE_TO_TEXT = ("{% set m = {'0':'Standby','1':'Nur Warmwasser','2':'Heizen und 
                 "{{ m.get(value | string | trim, 'Unbekannt (' ~ value ~ ')') }}")
 TEXT_TO_MODE = ("{% set m = {'Standby':0,'Nur Warmwasser':1,'Heizen und Warmwasser':2,"
                 "'Dauernd reduziert':3,'Dauernd normal':4} %}{{ m[value] }}")
-PROGRAM_TEXT = ("{% set m = {'0':'standby','1':'reduced','2':'normal','3':'comfort'} %}"
+PROGRAM_TEXT = ("{% set m = {'0':'standby','1':'reduced','2':'normal','3':'comfort','4':'external','5':'standby'} %}"
                 "{{ m.get(value | string | trim, 'unknown') }}")
 HVAC_FROM_MODE = ("{% set m = {'0':'off','1':'off','2':'auto','3':'off','4':'heat'} %}"
                   "{{ m.get(value | string | trim, 'off') }}")
@@ -231,9 +231,9 @@ for n, B in HK_BASE.items():
     for key, label, icon in (("normal", "Programm Normal", "mdi:thermometer"),
                              ("reduziert", "Programm Reduziert", "mdi:thermometer-low"),
                              ("standby", "Programm Standby", "mdi:power-standby")):
-        prog = {"normal": "normal", "reduziert": "reduced", "standby": "standby"}[key]
+        codes = {"normal": "['2']", "reduziert": "['1']", "standby": "['0', '5']"}[key]
         derived("binary_sensor", f"{p}programm_{key}", p + "programm",
-                "{{ 'ON' if value | string | trim == '" + prog + "' else 'OFF' }}", name=label, icon=icon,
+                "{{ 'ON' if value | string | trim in " + codes + " else 'OFF' }}", name=label, icon=icon,
                 entity_category="diagnostic", **H)
 
     # set points and heating curve (writable numbers)
