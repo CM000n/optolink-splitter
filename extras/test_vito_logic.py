@@ -77,6 +77,17 @@ class Curve(unittest.TestCase):
         self.assertIsNone(v.heating_curve_target(None, 20, 1.2, 1))
 
 
+class Faults(unittest.TestCase):
+    def test_decode_fault(self):
+        self.assertEqual(v.decode_fault(bytes.fromhex("c22025062907071038")), (0xC2, datetime(2025, 6, 29, 7, 10, 38)))
+        self.assertEqual(v.decode_fault(bytes.fromhex("9a2023041405100626")), (0x9A, datetime(2023, 4, 14, 10, 6, 26)))
+
+    def test_empty_entries(self):
+        self.assertIsNone(v.decode_fault(bytes.fromhex("00" + "ff" * 8)))
+        self.assertIsNone(v.decode_fault(bytes.fromhex("ff" + "ff" * 8)))
+        self.assertIsNone(v.decode_fault(bytes.fromhex("c22025133207071038")))     # month 13 / day 32
+
+
 class Misc(unittest.TestCase):
     def test_vdatetime(self):
         self.assertEqual(v.parse_vdatetime("Fr 16.10.2026 09:52:11"), datetime(2026, 10, 16, 9, 52, 11))

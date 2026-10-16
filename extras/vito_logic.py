@@ -133,3 +133,18 @@ def program_register_offset(program, party):
     if program == "reduced":
         return 0x307
     return 0x306
+
+
+# --------------------------------------------------------------------------------------------------------------
+# fault history: 10 entries x 9 byte at 0x7507 (code + 8 byte BCD date yyyy mm dd weekday hh mm ss)
+# --------------------------------------------------------------------------------------------------------------
+def decode_fault(entry):
+    """9 bytes -> (code, datetime) or None for an empty / invalid entry."""
+    if len(entry) < 9 or entry[0] in (0x00, 0xFF):
+        return None
+    digits = entry[1:9].hex()
+    try:
+        when = datetime(int(digits[0:4]), int(digits[4:6]), int(digits[6:8]), int(digits[10:12]), int(digits[12:14]), int(digits[14:16]))
+    except ValueError:
+        return None
+    return entry[0], when

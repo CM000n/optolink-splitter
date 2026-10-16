@@ -78,7 +78,7 @@ HOLIDAY_REGISTERS = (0x2309, 0x3309, 0x4309)
 CYCLING_THRESHOLD = 4
 HOLIDAY_UNSET = bytes.fromhex("19700101040000001970010104000000")
 INPUTS = [  # splitter topics we need
-    "brennermodulation", "brennerstarts", "brennerlaufzeit", "aussentemperatur", "sammelstoerung",
+    "brennermodulation", "brennerstarts", "brennerlaufzeit", "aussentemperatur", "aussentemperatur_gemischt", "sammelstoerung",
     "solar_kollektortemperatur", "solar_speichertemperatur",
     "urlaubsprogramm_beginn", "urlaubsprogramm_ende",
     "interne_kesselpumpe", "warmwasser_ladepumpe", "zirkulationspumpe", "solarpumpe",
@@ -202,6 +202,8 @@ def entity_defs():
     add("sensor", "solar_temperaturdifferenz_kollektor_speicher", "solar", "Temperaturdifferenz Kollektor/Speicher",
         icon="mdi:delta", unit_of_measurement="K", state_class="measurement", suggested_display_precision=1,
         state_topic=f"{EXT}/solar_temperaturdifferenz_kollektor_speicher")
+    add("sensor", "fehlerhistorie", "anlage", "Letzter Fehler", icon="mdi:alert-circle-outline", entity_category="diagnostic",
+        state_topic=f"{EXT}/fehlerhistorie", json_attributes_topic=f"{EXT}/fehlerhistorie/attr")
     add("binary_sensor", "urlaubsprogramm", "anlage", "Urlaubsprogramm", icon="mdi:airplane",
         state_topic=f"{EXT}/urlaubsprogramm")
     add("button", "urlaubsprogramm_beenden", "anlage", "Urlaubsprogramm beenden", icon="mdi:airplane-off",
@@ -371,6 +373,8 @@ class Extras:
 
     def handle_command(self, rest, payload):
         name, _, action = rest.rpartition("/")
+        if rest == "_faulthistory":
+            return self.fault_history()
         if rest == "_faultcode":
             self.fault_code = self.read_hex(0x7507, 1)[0]      # most recent entry of the fault history
             return self.fault(self.values.get("sammelstoerung") == "ON")
@@ -561,7 +565,7 @@ class Extras:
                 self.pub(f"{EXT}/brenner_laufzeit_pro_start", round(hours * 60 / starts, 1))
         if name == "sammelstoerung":
             self.fault(self.values.get(name) == "ON")
-        if name in ("aussentemperatur",) or name.startswith(("hk1_", "hk2_")):
+        if name in ("aussentemperatur", "aussentemperatur_gemischt") or name.startswith(("hk1_", "hk2_")):
             for hk in ("hk1", "hk2"):
                 self.curve(hk)
                 self.preset(hk)
@@ -638,6 +642,9 @@ class Extras:
     def fault(self, active):
         """No separate burner controller state is readable; derive it from the collective fault flag."""
         status = "error" if active else "ok"
+        if active != getattr(self, "fault_active", None):
+            self.fault_active = active
+            self.jobs.put(("_faulthistory", ""))
         if not active:
             code, details = 0, "ok"
             self.fault_code = None
@@ -652,8 +659,21 @@ class Extras:
             self.pub(f"{EXT}/{prefix}_fehlercode", code)
             self.pub(f"{EXT}/{prefix}_fehlerdetails", details)
 
+    def fault_history(self):
+        """The controller keeps the last 10 faults (code + time); the ViCare API only shows the current status."""
+        entries = []
+        for i in range(10):
+            fault = logic.decode_fault(self.read_hex(0x7507 + 9 * i, 9))
+            if fault:
+                entries.append({"code": f"0x{fault[0]:02X}", "zeit": fault[1].isoformat(sep=" ")})
+        state = f"{entries[0]['code']} ({entries[0]['zeit'][:10]})" if entries else "keine"
+        self.pub(f"{EXT}/fehlerhistorie", state)
+        self.pub(f"{EXT}/fehlerhistorie/attr", {"eintraege": entries, "anzahl": len(entries)})
+
     def curve(self, hk):
-        outside = self.num("aussentemperatur")
+        outside = self.num("aussentemperatur_gemischt")          # the value the controller's heating curve works with
+        if outside is None:
+            outside = self.num("aussentemperatur")
         room = self.num(f"{hk}_raumsolltemperatur_aktuell")
         if room is None or room < 5:
             room = self.num(f"{hk}_normaltemperatur")
@@ -698,8 +718,12 @@ class Extras:
     # ---------------- housekeeping ----------------
     def ticker(self):
         time.sleep(15)
+        last_history = 0.0
         while not self.stop.wait(15):
             try:
+                if time.time() - last_history > 6 * 3600:
+                    last_history = time.time()
+                    self.jobs.put(("_faulthistory", ""))
                 if not self.state.data["backup"].get("weeks"):
                     try:
                         self.backup_schedules()

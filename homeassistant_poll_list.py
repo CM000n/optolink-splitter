@@ -91,6 +91,10 @@ HOLIDAY_DATE = ("{% set d = value[3:13] %}{% if d[6:10] == '1970' or d | length 
 # --------------------------------------------------------------------------------------------------------------
 A = {"device": "anlage"}
 poll("sensor", "aussentemperatur", ("OFTEN", 0x0800, 2, 0.1, True), name="Außentemperatur", **A, **TEMP)
+for dp, addr, label, note in (("aussentemperatur_gedaempft", 0x5523, "Außentemperatur gedämpft", "slow damping, used for the building"),
+                              ("aussentemperatur_gefiltert", 0x5525, "Außentemperatur gefiltert", "short low pass"),
+                              ("aussentemperatur_gemischt", 0x5527, "Außentemperatur gemischt (Regelung)", "mix of both: the value the heating curve works with")):
+    poll("sensor", dp, ("OFTEN", addr, 2, 0.1, True), name=label, icon="mdi:thermometer-lines", entity_category="diagnostic", **A, **TEMP)
 poll("binary_sensor", "aussentemperatur_sensorfehler", ("SOMETIMES", 0x083A, 1, "onoff"),
      name="Außentemperatur Sensorfehler", icon="mdi:thermometer-alert", device_class="problem",
      entity_category="diagnostic", **A)
