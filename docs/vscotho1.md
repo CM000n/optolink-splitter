@@ -112,8 +112,8 @@ the ViCare integration. Highlights:
   starts last hour / today, run time today, last run / pause), pumps and their run time today, heating curve target and
   deviation, time program state, sensor status, frost protection, holiday program, solar yields, DHW and circulation.
 * Controls: set points, heating curve, operating mode (select), `climate` per circuit (mode, set point, presets), DHW
-  `water_heater`, switches "Komfortbetrieb" / "Sparbetrieb" per heating circuit (like the ViCare app), boost / permanent operation / reset
-  of the DHW and circulation time programs, holiday program (date entities for start and end like in the app, plus "beenden").
+  `water_heater`, switches "Komfortbetrieb" / "Sparbetrieb" per heating circuit (like the ViCare app), the switches "Zusatzaufheizung" (DHW) / "Zusatzlauf" (circulation) and "Dauerbetrieb"
+  that bridge their time programs, holiday program (date entities for start and end like in the app, plus "beenden").
 * More than the API: exhaust gas temperature, the controller's flow set point, the three outside temperature values,
   eco / party flags, the sensor status incl. "not connected" vs "error", the controller clock and its drift, the
   fault history with timestamps, 5 s burner data, the set point of the active program.
@@ -136,9 +136,9 @@ the ViCare integration. Highlights:
 * Boost and permanent operation come from the cloud based ViCare *custom integration*, not from the ViCare app or the controller (the app
   has no timed boost). The heating circuits do not have them any more (operating mode "Dauernd Tagbetrieb" and the comfort / eco switches
   do this natively); DHW and circulation still do, and they work the same way as before (they rewrite the time program): the original day / week is
-  stored in `extras_state.json` **before** anything is written and restored when the boost ends or when "Zeitprogramm
-  zurücksetzen" is pressed. On the first start a snapshot of all four time programs is stored in the same file. "Zeitprogramm
-  zurücksetzen" ends an active override; it does not restore factory settings.
+  stored in `extras_state.json` **before** anything is written and restored when the boost ends (after its duration, or when the switch
+  "Zusatzaufheizung" / "Zusatzlauf" is turned off) or when "Dauerbetrieb" is turned off. Each switch ends only its own bridging. On the
+  first start a snapshot of all four time programs is stored in the same file; it does not restore factory settings.
 * The climate set point writes the set point register of the active program (normal / reduced; comfort while the party flag is on).
 * The presets *comfort* / *eco* write the command registers `0x?330` / `0x?331` like the ViCare app. Comfort verified in time program
   mode: set point 22 °C, party flag on after the next poll, "home" switches it off again. Eco was recorded from the app (it is taken

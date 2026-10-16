@@ -68,6 +68,9 @@ class FakeExtras(ex.Extras):
         self.regs[addr] = data
 
     def read_hex(self, addr, length):
+        for key, (base, _, _) in ex.SCHEDULES.items():
+            if base <= addr < base + 56:
+                return bytes(self.weeks[key][addr - base:addr - base + length])
         return bytes([self.regs.get(addr, 0)]) * length
 
     def forcepoll(self):
@@ -117,6 +120,50 @@ class ProgramSwitchTests(unittest.TestCase):
     def test_writes_are_limited_to_the_whitelist(self):
         self.assertTrue(all(ex.Extras.write_allowed(a, 1) for a in (0x4330, 0x4331, 0x3330, 0x3331)))
         self.assertFalse(ex.Extras.write_allowed(0x4303, 1))          # the status flag is not a command
+
+
+class BoostSwitchTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        ex.STATE_FILE = os.path.join(self.tmp.name, "state.json")
+        self.x = FakeExtras()
+        self.original = bytes(self.x.weeks["warmwasser"])
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_switch_on_starts_and_off_ends_the_boost(self):
+        self.x.handle_command("warmwasser_boost/set", "ON")
+        self.assertEqual(self.x.override_kind("warmwasser"), "boost")
+        self.assertEqual(self.x.published["VitoExt/warmwasser_boost"], "ON")
+        self.assertEqual(self.x.published["VitoExt/warmwasser_zeitprogramm_aktiv"], "OFF")
+        self.x.handle_command("warmwasser_boost/set", "OFF")
+        self.assertIsNone(self.x.override_kind("warmwasser"))
+        self.assertEqual(bytes(self.x.weeks["warmwasser"]), self.original)               # the time program is restored
+        self.assertEqual(self.x.published["VitoExt/warmwasser_boost"], "OFF")
+        self.assertEqual(self.x.published["VitoExt/warmwasser_zeitprogramm_aktiv"], "ON")
+
+    def test_switch_off_without_a_boost_writes_nothing(self):
+        self.x.handle_command("zirkulation_boost/set", "OFF")
+        self.assertEqual(self.x.writes, [])
+        self.assertEqual(self.x.published["VitoExt/zirkulation_boost"], "OFF")
+
+    def test_the_old_press_command_still_starts_a_boost(self):
+        self.x.handle_command("zirkulation_boost/press", "PRESS")
+        self.assertEqual(self.x.override_kind("zirkulation"), "boost")
+
+    def test_permanent_operation_off_does_not_end_a_boost_and_boost_off_does_not_end_permanent(self):
+        self.x.handle_command("warmwasser_boost/set", "ON")
+        self.x.handle_command("warmwasser_dauerbetrieb/set", "OFF")
+        self.assertEqual(self.x.override_kind("warmwasser"), "boost")
+        self.x.handle_command("warmwasser_boost/set", "OFF")
+        self.x.handle_command("warmwasser_dauerbetrieb/set", "ON")
+        self.assertEqual(self.x.override_kind("warmwasser"), "permanent")
+        self.x.handle_command("warmwasser_boost/set", "OFF")
+        self.assertEqual(self.x.override_kind("warmwasser"), "permanent")
+        self.x.handle_command("warmwasser_dauerbetrieb/set", "OFF")
+        self.assertIsNone(self.x.override_kind("warmwasser"))
+        self.assertEqual(bytes(self.x.weeks["warmwasser"]), self.original)
 
 
 class HolidayCommandTests(unittest.TestCase):

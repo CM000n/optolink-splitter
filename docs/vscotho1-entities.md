@@ -2,7 +2,7 @@ ERROR importing settings module: No module named 'settings_ini'
 # Entities of the Vitotronic 200 (VScotHO1) integration
 
 Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito_extras.py` (source *extras*) by `tools/entity_doc.py`.
-115 entities in 9 devices. Entity ids are `<domain>.vito_<name>`; the display names are German like in
+113 entities in 9 devices. Entity ids are `<domain>.vito_<name>`; the display names are German like in
 Home Assistant. Home Assistant sorts the entities of a device by category (controls, sensors, configuration, diagnostic) and then by name.
 
 ## Viessmann Heizung
@@ -69,11 +69,10 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 | `binary_sensor.vito_warmwasser_aufladung` | Aufladung | primary | splitter |
 | `binary_sensor.vito_warmwasser_ladepumpe` | Ladepumpe | primary | splitter |
 | `binary_sensor.vito_warmwasser_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
-| `button.vito_warmwasser_boost` | Zusatzaufheizung starten | primary | extras |
-| `button.vito_warmwasser_zeitprogramm_zuruecksetzen` | Überbrückung beenden | primary | extras |
 | `number.vito_warmwasser_solltemperatur` | Solltemperatur | primary | splitter |
 | `sensor.vito_warmwasser_speichertemperatur` | Speichertemperatur | primary | splitter |
 | `switch.vito_warmwasser_dauerbetrieb` | Dauerbetrieb (Zeitprogramm überbrückt) | primary | extras |
+| `switch.vito_warmwasser_boost` | Zusatzaufheizung | primary | extras |
 | `water_heater.vito_warmwasser` | (device name) | primary | splitter |
 | `number.vito_warmwasser_boost_dauer` | Dauer Zusatzaufheizung | config | extras |
 | `binary_sensor.vito_warmwasser_auslauftemperatur_sensorfehler` | Auslauftemperatur Sensorfehler | diagnostic | splitter |
@@ -87,9 +86,8 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 |---|---|---|---|
 | `binary_sensor.vito_zirkulationspumpe` | WW-Zirkulationspumpe | primary | splitter |
 | `binary_sensor.vito_zirkulation_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
-| `button.vito_zirkulation_boost` | Zusatzlauf starten | primary | extras |
-| `button.vito_zirkulation_zeitprogramm_zuruecksetzen` | Überbrückung beenden | primary | extras |
 | `switch.vito_zirkulation_dauerbetrieb` | Dauerbetrieb (Zeitprogramm überbrückt) | primary | extras |
+| `switch.vito_zirkulation_boost` | Zusatzlauf | primary | extras |
 | `number.vito_zirkulation_boost_dauer` | Dauer Zusatzlauf | config | extras |
 | `sensor.vito_zirkulationspumpe_laufzeit_heute` | Pumpe Laufzeit heute | diagnostic | extras |
 | `sensor.vito_zirkulation_zeitprogramm` | Zeitplan (aktuell) | diagnostic | extras |
