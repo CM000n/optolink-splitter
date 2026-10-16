@@ -115,9 +115,9 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 
 | Entity | Name | Category | Source |
 |---|---|---|---|
+| `binary_sensor.vito_hk1_zeitprogramm_aktiv` | Aktiver Heizmodus: Zeitprogramm | primary | extras |
 | `binary_sensor.vito_hk1_frostschutz` | Frostschutz | primary | splitter |
 | `binary_sensor.vito_hk1_pumpe` | Umwälzpumpe | primary | splitter |
-| `binary_sensor.vito_hk1_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
 | `climate.vito_hk1_heizung` | (device name) | primary | splitter |
 | `number.vito_hk1_komforttemperatur` | Solltemperatur Komfort | primary | splitter |
 | `number.vito_hk1_normaltemperatur` | Solltemperatur Normal | primary | splitter |
@@ -126,8 +126,8 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 | `sensor.vito_hk1_programm` | Aktiver Heizmodus | primary | extras |
 | `sensor.vito_hk1_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | primary | splitter |
 | `sensor.vito_hk1_vorlauftemperatur` | Vorlauftemperatur | primary | splitter |
-| `switch.vito_hk1_komfortbetrieb` | Komfortbetrieb | primary | extras |
-| `switch.vito_hk1_sparbetrieb` | Sparbetrieb | primary | extras |
+| `switch.vito_hk1_sparbetrieb` | Betrieb 1: Sparbetrieb | primary | extras |
+| `switch.vito_hk1_komfortbetrieb` | Betrieb 2: Komfortbetrieb | primary | extras |
 | `number.vito_hk1_heizkurve_steigung` | Heizkurve Steigung | config | splitter |
 | `number.vito_hk1_heizkurve_niveau` | Heizkurve Verschiebung | config | splitter |
 | `text.vito_hk1_name` | Name | config | extras |
@@ -142,9 +142,9 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 
 | Entity | Name | Category | Source |
 |---|---|---|---|
+| `binary_sensor.vito_hk2_zeitprogramm_aktiv` | Aktiver Heizmodus: Zeitprogramm | primary | extras |
 | `binary_sensor.vito_hk2_frostschutz` | Frostschutz | primary | splitter |
 | `binary_sensor.vito_hk2_pumpe` | Umwälzpumpe | primary | splitter |
-| `binary_sensor.vito_hk2_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
 | `climate.vito_hk2_heizung` | (device name) | primary | splitter |
 | `number.vito_hk2_komforttemperatur` | Solltemperatur Komfort | primary | splitter |
 | `number.vito_hk2_normaltemperatur` | Solltemperatur Normal | primary | splitter |
@@ -153,8 +153,8 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 | `sensor.vito_hk2_programm` | Aktiver Heizmodus | primary | extras |
 | `sensor.vito_hk2_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | primary | splitter |
 | `sensor.vito_hk2_vorlauftemperatur` | Vorlauftemperatur | primary | splitter |
-| `switch.vito_hk2_komfortbetrieb` | Komfortbetrieb | primary | extras |
-| `switch.vito_hk2_sparbetrieb` | Sparbetrieb | primary | extras |
+| `switch.vito_hk2_sparbetrieb` | Betrieb 1: Sparbetrieb | primary | extras |
+| `switch.vito_hk2_komfortbetrieb` | Betrieb 2: Komfortbetrieb | primary | extras |
 | `number.vito_hk2_heizkurve_steigung` | Heizkurve Steigung | config | splitter |
 | `number.vito_hk2_heizkurve_niveau` | Heizkurve Verschiebung | config | splitter |
 | `text.vito_hk2_name` | Name | config | extras |

@@ -199,9 +199,10 @@ def entity_defs():
             suggested_display_precision=1, state_topic=f"{EXT}/{hk}_vorlauf_abweichung_zur_heizkurve", **diag)
         add("sensor", f"{hk}_programm", device, "Aktiver Heizmodus", icon="mdi:format-list-bulleted-type",
             state_topic=f"{EXT}/{hk}_programm")
-        add("binary_sensor", f"{hk}_zeitprogramm_aktiv", device, "Zeitprogramm", icon="mdi:calendar-check",
+        add("binary_sensor", f"{hk}_zeitprogramm_aktiv", device, "Aktiver Heizmodus: Zeitprogramm", icon="mdi:calendar-check",
             state_topic=f"{EXT}/{hk}_zeitprogramm_aktiv")
-        for name, label, icon in (("komfortbetrieb", "Komfortbetrieb", "mdi:sofa"), ("sparbetrieb", "Sparbetrieb", "mdi:leaf")):
+        # the names make Home Assistant's alphabetical device page list eco before comfort
+        for name, label, icon in (("sparbetrieb", "Betrieb 1: Sparbetrieb", "mdi:leaf"), ("komfortbetrieb", "Betrieb 2: Komfortbetrieb", "mdi:sofa")):
             add("switch", f"{hk}_{name}", device, label, icon=icon, state_topic=f"{EXT}/{hk}_{name}",
                 command_topic=f"{EXT}/{hk}_{name}/set")
         add("text", f"{hk}_name", device, "Name", icon="mdi:rename-outline", entity_category="config",
