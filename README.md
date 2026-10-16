@@ -5,6 +5,8 @@ Make your Viessmann heating locally available via MQTT and TCP/IP while keeping 
 
 **Use this software at your own risk.**
 
+> **Fork note:** this fork adds a complete, tested Home Assistant setup for a Vitotronic 200 (`VScotHO1`, device ident `0x20CB`) with grouped devices, icons, controls (`climate`, `water_heater`, numbers, selects), derived entities and a companion service. See [docs/vscotho1.md](docs/vscotho1.md). It also extends `homeassistant_publish.py` (sub-devices, per-entity metadata, `--prune`).
+
 For latest developments always check the [Version-Log](https://github.com/philippoo66/optolink-splitter/wiki/990-Version-Log)
 
 ## 🎉 Announcements

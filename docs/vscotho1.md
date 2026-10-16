@@ -1,0 +1,167 @@
+# Vitotronic 200 (VScotHO1, device ident 0x20CB) with Home Assistant
+
+This fork adds a complete, tested Home Assistant setup for a Viessmann gas boiler with a Vitotronic 200
+(device ident `0x20CB`, called `VScotHO1` by the ViCare cloud) that has two heating circuits, a DHW cylinder, a DHW
+circulation pump and solar thermal. It replaces the cloud based ViCare integration by local data from the Optolink
+interface: no cloud, no API limit (the cloud allows about 1450 calls per day), 5 s instead of 60 s resolution, and some
+data the API does not offer at all.
+
+The setup was built and verified against the cloud API of the same installation, which is why most addresses below are
+marked as verified. If your device has the same ident, the poll list works out of the box; for other devices the
+addresses are a good starting point and the tools in `tools/` help to find the right ones (see
+[Adapting to another installation](#adapting-to-another-installation)).
+
+* [Entity list](vscotho1-entities.md) (135 entities, generated)
+* Files: `homeassistant_poll_list.py` (datapoints and entities), `homeassistant_publish.py` (discovery, extended in this fork),
+  `extras/` (companion service), `systemd/` (unit files), `tools/` (probe, MQTT helper, Vitoconnect capture)
+
+## Architecture
+
+```
+Boiler -- Optolink head -- CP2102 USB-UART (/dev/ttyUSB0) --+
+                                                            +-- optolinkvs2_switch.py (systemd: optolink-splitter)
+Vitoconnect (OPTO1/OPTO2) -- Pi UART (/dev/ttyAMA0) --------+        |  publishes <topic>/<datapoint>, accepts <topic>/<datapoint>/set and <topic>/cmnd
+                                                                      v
+                                                          MQTT broker -- Home Assistant (MQTT discovery)
+                                                                      ^
+                                                          extras/vito_extras.py (systemd: optolink-extras)
+                                                          derived values, climate presets, boost / permanent operation
+```
+
+* The splitter stays between the boiler and the Vitoconnect, so the cloud connection (ViCare app, API) keeps working in parallel.
+* `homeassistant_publish.py` publishes the retained discovery configs once (and after every change of the poll list).
+* `extras/vito_extras.py` never touches the serial port. It listens to the splitter's topics, sends commands through
+  `<topic>/cmnd` and publishes its own entities below `<topic>Ext/`.
+
+## Installation (Raspberry Pi OS, Python 3.13)
+
+1. Prepare the UART as described in the wiki (enable the serial port, disable the serial console, use `ttyAMA0` on a Pi 3/4/5;
+   on a Pi 4 `dtoverlay=pi3-miniuart-bt` in `/boot/firmware/config.txt` frees the PL011).
+2. Clone this fork, create a virtual environment and install the two dependencies:
+   ```bash
+   git clone https://github.com/CM000n/optolink-splitter.git && cd optolink-splitter
+   python3 -m venv myvenv && myvenv/bin/pip install pyserial paho-mqtt
+   cp settings_ini.py.example settings_ini.py       # then edit, see below
+   ```
+3. `settings_ini.py` (this file is git-ignored because it contains credentials):
+   * `mqtt_broker = "host:1883"`, `mqtt_user = "user:password"` (**the value must be quoted**; an unquoted value is a syntax
+     error and the splitter silently falls back to its default settings),
+   * `mqtt_retain = True` so that values survive a Home Assistant restart,
+   * `show_opto_rx = False` when running as a service (otherwise every telegram lands in the journal),
+   * `tcpip_port = None` unless you need the TCP interface (it is unauthenticated and can write),
+   * `port_vitoconnect = '/dev/ttyAMA0'` if a Vitoconnect is attached, otherwise `None`.
+4. Install the services (adjust user and paths in the unit files first):
+   ```bash
+   sudo cp systemd/optolink-splitter.service systemd/optolink-extras.service /etc/systemd/system/
+   sudo systemctl daemon-reload && sudo systemctl enable --now optolink-splitter optolink-extras
+   ```
+   Both start at boot (`systemctl is-enabled optolink-splitter optolink-extras`). If the splitter does not see the Vitoconnect within
+   about 6 minutes after a start it continues without it; `sudo systemctl restart optolink-splitter` re-attaches it.
+5. Publish the Home Assistant entities (the splitter must be running; `--console` prints instead of publishing, `--prune`
+   removes retained configs that are no longer part of the poll list):
+   ```bash
+   PYTHONPATH=. myvenv/bin/python homeassistant_publish.py --prune
+   ```
+   Update later with `git pull`, `sudo systemctl restart optolink-splitter optolink-extras` and the command above.
+
+## Datapoints (VScotHO1, verified)
+
+Heating circuits: HK1 (floor heating) is the controller circuit **M2** at base `0x3000`, HK2 (radiators) is **M3** at `0x4000`;
+M1 (`0x2000`) is unused here. Offsets relative to the base:
+
+| Offset | Content |
+|---|---|
+| `0x301` | active program: 0 = DHW only, 1 = reduced, 2 = normal, 5 = off |
+| `0x302` / `0x303` | eco ("Spar") / party flag, writable (only effective while the circuit heats in schedule mode) |
+| `0x306` / `0x307` / `0x308` | normal / reduced / comfort room set point, 1 byte in deg C, writable |
+| `0x309` / `0x311` | holiday start / end, 8 byte BCD each (`1970-01-01` = unset), writable |
+| `0x323` | operating mode: 0 standby, 1 DHW only, 2 heating + DHW, 3 forced reduced, 4 forced normal, writable |
+| `0x500` | status block; bytes 12-13 are the set point of the active program (x0.1) |
+| `0x544` | flow set point of the controller (x0.1) |
+| `0x549` | frost protection |
+| `0x7D3` / `0x7D4` | heating curve slope (x0.1) / level, writable |
+| `0x900` / `0x904` / `0x906` | flow temperature (x0.1) / flow sensor status / circuit pump |
+| `0x000` .. `0x037` | time program, 7 days (Monday first) x 8 byte = 4 on/off pairs, byte = hour*8 + minute/10, `0xFF` unused |
+
+General: `0x0800` outside, `0x0802` boiler, `0x0804` DHW cylinder, `0x0808` exhaust gas (x0.1 signed); `0x083A`-`0x0840` sensor
+status (0 ok, 1 error, 2 not connected - inferred from the sensors of this installation; outside, boiler, cylinder, ..., DHW outlet at `0x083F`); `0x5523` / `0x5525` / `0x5527`
+outside temperature damped / filtered / mixed (the controller's heating curve uses the mixed one); `0x555A` boiler set point;
+`0x55D3` burner modulation in %; `0x088A` burner starts; `0x08A7` burner seconds; `0x088E` controller clock (BCD);
+`0x6300` DHW set point (writable); `0x6513` / `0x6515` / `0x6552` / `0x7660` DHW charge pump / circulation pump / solar pump /
+internal boiler pump; `0x6564` / `0x6566` solar collector / storage temperature; `0x6560` solar total yield (kWh);
+`0xCF30` solar yield of the last days (4 byte each, Wh, today first); `0x6551` recharge suppression; `0x5723` / `0x5724` solar
+sensor status; `0x2100` / `0x2200` time program of DHW / circulation; `0x7507` fault history (10 x 9 byte: code + BCD time);
+`0x0A82` collective fault; `0xF000` controller serial number.
+
+Things worth knowing:
+
+* **The controller returns at most 55 data bytes per read.** Longer requests are silently cut. Read time programs as 48 + 8 byte.
+* **Some start addresses are rejected** (for example `0xCF34` or `0x0820`) although a longer read that covers them works. Read from a
+  valid start and cut with a byte filter (`b:4:7`).
+* A write to a read-only register is acknowledged but has no effect; only writes that were read back are listed as writable above.
+* The splitter publishes numeric codes (`0x?301`, `0x?323`); the readable texts come from the discovery templates.
+
+## Entities
+
+[All 135 entities](vscotho1-entities.md), grouped into devices like the ViCare custom component did (installation, boiler, DHW,
+circulation, solar, each heating circuit) via the `devices` and `entity_meta` tables of the poll list. Icons and names follow
+the ViCare integration. Highlights:
+
+* Everything the ViCare integration offered for this boiler: temperatures, burner (modulation, starts, hours, cycling,
+  starts last hour / today, run time today, last run / pause), pumps and their run time today, heating curve target and
+  deviation, time program state, sensor status, frost protection, holiday program, solar yields, DHW and circulation.
+* Controls: set points, heating curve, operating mode (select), `climate` per circuit (mode, set point, presets), DHW
+  `water_heater`, boost / permanent operation and reset of the four time programs, end of the holiday program.
+* More than the API: exhaust gas temperature, the controller's flow set point, the three outside temperature values,
+  eco / party flags, the sensor status incl. "not connected" vs "error", the controller clock and its drift, the
+  fault history with timestamps, 5 s burner data, the set point of the active program.
+* Not reproduced: cloud-only items (API call counter, schedule helper sync of the cloud) and a few static "active" flags of the API.
+
+## Controls and safety
+
+* Writes of the splitter go through its `<topic>/<datapoint>/set` topics; the datapoint's address, length, scale and sign
+  come from the poll list. **Anyone who can publish to the MQTT broker can write to every poll-list datapoint**, so protect
+  the broker with credentials/ACLs. Keep `tcpip_port = None` unless you need it.
+* `extras/vito_extras.py` only writes to a whitelist: the set point registers, party / eco flags, the days of the four time programs
+  and the holiday dates. Time program writes are read back and compared.
+* Boost and permanent operation work like the ViCare integration did (they rewrite the time program): the original day / week is
+  stored in `extras_state.json` **before** anything is written and restored when the boost ends or when "Zeitprogramm
+  zurücksetzen" is pressed. On the first start a snapshot of all four time programs is stored in the same file. "Zeitprogramm
+  zurücksetzen" ends an active override; it does not restore factory settings.
+* The climate set point writes the register of the active program (normal / reduced / comfort). In "forced normal" mode the controller
+  clears the party flag again, so the preset *comfort* has no lasting effect on such a circuit.
+
+## Adapting to another installation
+
+1. `tools/mqtt_capture_viconn.py` records which datapoints the Vitoconnect reads over the Optolink (set `viconn_to_mqtt = True`).
+   Those are exactly the datapoints behind the cloud features of your installation.
+2. `tools/optolink_probe.py --scan 0x0000 0x10000 16` (splitter stopped) maps the readable address space; reading from a block
+   start with a longer length reveals the "holes" the scan misses.
+3. Compare candidate registers with the values of the cloud entities (the Home Assistant history is a good oracle); to find
+   registers of a state (frost protection, sensor error, holiday), correlate with times where the cloud shows the state.
+4. `tools/mqtt_cmd.py "read;0x0800;2;0.1;true"` reads or writes through the running splitter without a TCP port.
+5. Add the datapoint to the poll list, `sudo systemctl restart optolink-splitter`, `homeassistant_publish.py --prune`.
+   Writes: test on a circuit that is currently inactive and restore the value immediately.
+
+## Migrating from the ViCare cloud integration
+
+The cloud integration can run in parallel. To keep graphs and history when switching, the statistics and the recorded states of
+the old entities can be copied to the new entity ids:
+
+* long-term statistics: `recorder/statistics_during_period` of the old id, `recorder/import_statistics` for the new id (only rows
+  older than the first row of the new entity), and `recorder/adjust_sum_statistics` for cumulative sensors so that the sum
+  continues without a jump;
+* recorded states: `INSERT INTO states ... SELECT` with the new `metadata_id` for rows older than the first state of the new entity,
+  logging the inserted `state_id`s in a helper table so that the copy can be undone exactly. Dashboards, automations and YAML are
+  then switched with an exact entity id replacement (word boundaries!) after a backup.
+
+## Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| `ERROR importing settings module: invalid syntax` | quote `mqtt_user = "user:password"`; the splitter used defaults |
+| every poll item answers `RetCode 3` | the poll list is for another controller (the example list is for a heat pump) |
+| entities `unavailable` after a restart | the splitter's LWT is `offline` for a few seconds, they recover by themselves |
+| a datapoint reads the first 55 bytes only | controller limit, split the read |
+| entity on the wrong device after a change | Home Assistant keeps the device of existing entities: remove the entity from the registry, republish the discovery |
+| time program stuck after a crash | restore it from `extras_state.json` (`overrides` / `backup`) with `tools/mqtt_cmd.py "writeraw;0x...;..."` |
