@@ -77,14 +77,12 @@ class ProgramSwitchTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         ex.STATE_FILE = os.path.join(self.tmp.name, "state.json")
-        ex.FLAG_READBACK_DELAY = 0
         self.x = FakeExtras()
 
     def tearDown(self):
         self.tmp.cleanup()
 
     def test_comfort_on_cancels_eco_and_switches_comfort_on(self):
-        self.x.regs[0x4303] = 1                                     # the controller sets its status flag
         self.x.handle_command("hk2_komfortbetrieb/set", "ON")
         self.assertEqual(self.x.reg_writes, [(0x4331, 0), (0x4330, 1)])
         self.assertEqual(self.x.published["VitoExt/hk2_komfortbetrieb"], "ON")
@@ -101,6 +99,15 @@ class ProgramSwitchTests(unittest.TestCase):
         self.x.values.update({"hk2_partybetrieb": "ON", "hk2_sparbetrieb": "OFF"})
         self.x.program_switches("hk2")
         self.assertEqual((self.x.published["VitoExt/hk2_komfortbetrieb"], self.x.published["VitoExt/hk2_sparbetrieb"]), ("ON", "OFF"))
+
+    def test_a_shown_command_is_not_overridden_by_a_stale_poll_but_by_the_next_one(self):
+        self.x.handle_command("hk2_komfortbetrieb/set", "ON")
+        self.x.values.update({"hk2_partybetrieb": "OFF", "hk2_sparbetrieb": "OFF"})   # poll that ran before the controller set its flag
+        self.x.program_switches("hk2")
+        self.assertEqual(self.x.published["VitoExt/hk2_komfortbetrieb"], "ON")
+        self.x.switch_hold["hk2"] = 0                                                 # hold expired, a later poll decides
+        self.x.program_switches("hk2")
+        self.assertEqual(self.x.published["VitoExt/hk2_komfortbetrieb"], "OFF")
 
     def test_preset_comfort_uses_the_command_register(self):
         self.x.set_preset("hk2", "comfort")

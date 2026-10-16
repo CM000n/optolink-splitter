@@ -69,8 +69,9 @@ SCHEDULE_HELPERS = {                                         # time program -> (
 }
 
 # time programs: key -> (base address, device key, label)
-OBSOLETE_DISCOVERY = (("button", "hk1_boost"), ("button", "hk2_boost"), ("number", "hk1_boost_dauer"), ("number", "hk2_boost_dauer"))
-FLAG_READBACK_DELAY = 2.0                                    # seconds until the controller has set its status flag
+OBSOLETE_DISCOVERY = tuple((domain, f"{hk}_{name}") for hk in ("hk1", "hk2") for domain, name in (
+    ("button", "boost"), ("number", "boost_dauer"), ("switch", "dauerbetrieb"), ("button", "zeitprogramm_zuruecksetzen")))
+SWITCH_HOLD = 20.0                                           # seconds a command is shown before polled flags may override it
 SCHEDULES = {
     "hk1": (0x3000, "heizkreis_1", "Heizkreis 1"),
     "hk2": (0x4000, "heizkreis_2", "Heizkreis 2"),
@@ -206,13 +207,14 @@ def entity_defs():
         enum = ["normal", "reduced"] if key.startswith("hk") else ["on", "off"]
         add("sensor", f"{key}_zeitprogramm", device, "Zeitprogramm", icon="mdi:calendar-clock", device_class="enum",
             options=enum, state_topic=f"{EXT}/{key}_zeitprogramm", json_attributes_topic=f"{EXT}/{key}_zeitprogramm/attr")
+        if key.startswith("hk"):    # the heating circuits have the operating mode and comfort / eco like the ViCare app
+            continue                # instead of the boost / permanent operation of the old custom integration (time program rewrite)
         pump = key == "zirkulation"
-        if not key.startswith("hk"):        # the heating circuits have comfort / eco like the ViCare app instead of a boost
-            add("button", f"{key}_boost", device, "Pumpe Boost" if pump else "Boost", icon="mdi:rocket-launch",
-                command_topic=f"{EXT}/{key}_boost/press", payload_press="PRESS")
-            add("number", f"{key}_boost_dauer", device, "Pumpe Boost-Dauer" if pump else "Boost-Dauer",
-                icon="mdi:timer-cog-outline", entity_category="config", min=10, max=360, step=10, mode="box",
-                unit_of_measurement="min", state_topic=f"{EXT}/{key}_boost_dauer", command_topic=f"{EXT}/{key}_boost_dauer/set")
+        add("button", f"{key}_boost", device, "Pumpe Boost" if pump else "Boost", icon="mdi:rocket-launch",
+            command_topic=f"{EXT}/{key}_boost/press", payload_press="PRESS")
+        add("number", f"{key}_boost_dauer", device, "Pumpe Boost-Dauer" if pump else "Boost-Dauer",
+            icon="mdi:timer-cog-outline", entity_category="config", min=10, max=360, step=10, mode="box",
+            unit_of_measurement="min", state_topic=f"{EXT}/{key}_boost_dauer", command_topic=f"{EXT}/{key}_boost_dauer/set")
         add("switch", f"{key}_dauerbetrieb", device, "Pumpe Dauerbetrieb" if pump else "Dauerbetrieb",
             icon="mdi:calendar-lock", state_topic=f"{EXT}/{key}_dauerbetrieb", command_topic=f"{EXT}/{key}_dauerbetrieb/set")
         add("button", f"{key}_zeitprogramm_zuruecksetzen", device, "Zeitprogramm zurücksetzen",
@@ -259,6 +261,7 @@ class Extras:
         self.fault_code = None
         self.sched_lock = threading.RLock()
         self.sync_hold = {}                 # key -> timestamp until which the sync skips that time program
+        self.switch_hold = {}               # circuit -> timestamp until which a polled flag does not override a shown command
         self.sync_error_logged = 0.0
 
     # ---------------- mqtt ----------------
@@ -467,6 +470,8 @@ class Extras:
 
     def program_switches(self, hk):
         """State of the switches Komfortbetrieb / Sparbetrieb from the status flags the controller sets (0x?303 / 0x?302)."""
+        if time.time() < self.switch_hold.get(hk, 0):
+            return
         for name, flag in (("komfortbetrieb", "partybetrieb"), ("sparbetrieb", "sparbetrieb")):
             if f"{hk}_{flag}" in self.values:
                 self.pub(f"{EXT}/{hk}_{name}", "ON" if self.values.get(f"{hk}_{flag}") == "ON" else "OFF")
@@ -479,9 +484,12 @@ class Extras:
             self.write(other, 0)
         self.write(mine, 1 if on else 0)
         self.forcepoll()
-        time.sleep(FLAG_READBACK_DELAY)                          # show the result without waiting for the next poll
-        for flag, switch in ((0x303, "komfortbetrieb"), (0x302, "sparbetrieb")):
-            self.pub(f"{EXT}/{hk}_{switch}", "ON" if self.read_hex(base + flag, 1)[0] else "OFF")
+        # Show the expected state at once: the controller sets its status flag only after a few seconds. The next poll
+        # confirms it or corrects it (in a reduced phase the controller takes eco back).
+        self.switch_hold[hk] = time.time() + SWITCH_HOLD
+        self.pub(f"{EXT}/{hk}_{name}", "ON" if on else "OFF", force=True)
+        if on:
+            self.pub(f"{EXT}/{hk}_{'sparbetrieb' if name == 'komfortbetrieb' else 'komfortbetrieb'}", "OFF", force=True)
 
     def end_holiday(self):
         for addr in HOLIDAY_REGISTERS[1:]:          # M2 and M3 (M1 is unused)

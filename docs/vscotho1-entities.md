@@ -117,7 +117,6 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `binary_sensor.vito_hk1_programm_standby` | Heizphase Aus | splitter |
 | `binary_sensor.vito_hk1_pumpe` | Heizkreisumwälzpumpe | splitter |
 | `binary_sensor.vito_hk1_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
-| `button.vito_hk1_zeitprogramm_zuruecksetzen` | Zeitprogramm zurücksetzen | extras |
 | `climate.vito_hk1_heizung` | (device name) | splitter |
 | `number.vito_hk1_heizkurve_niveau` | Verschiebung der Heizkurve | splitter |
 | `number.vito_hk1_heizkurve_steigung` | Steigung der Heizkurve | splitter |
@@ -135,7 +134,6 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `sensor.vito_hk1_vorlaufsolltemperatur` | Vorlauf-Solltemperatur (Regler) | splitter |
 | `sensor.vito_hk1_vorlauftemperatur` | Vorlauftemperatur | splitter |
 | `sensor.vito_hk1_zeitprogramm` | Zeitprogramm | extras |
-| `switch.vito_hk1_dauerbetrieb` | Dauerbetrieb | extras |
 | `text.vito_hk1_name` | Name | extras |
 
 ## Heizkreis 2 (Heizkörper)
@@ -153,7 +151,6 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `binary_sensor.vito_hk2_programm_standby` | Heizphase Aus | splitter |
 | `binary_sensor.vito_hk2_pumpe` | Heizkreisumwälzpumpe | splitter |
 | `binary_sensor.vito_hk2_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
-| `button.vito_hk2_zeitprogramm_zuruecksetzen` | Zeitprogramm zurücksetzen | extras |
 | `climate.vito_hk2_heizung` | (device name) | splitter |
 | `number.vito_hk2_heizkurve_niveau` | Verschiebung der Heizkurve | splitter |
 | `number.vito_hk2_heizkurve_steigung` | Steigung der Heizkurve | splitter |
@@ -171,5 +168,4 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `sensor.vito_hk2_vorlaufsolltemperatur` | Vorlauf-Solltemperatur (Regler) | splitter |
 | `sensor.vito_hk2_vorlauftemperatur` | Vorlauftemperatur | splitter |
 | `sensor.vito_hk2_zeitprogramm` | Zeitprogramm | extras |
-| `switch.vito_hk2_dauerbetrieb` | Dauerbetrieb | extras |
 | `text.vito_hk2_name` | Name | extras |

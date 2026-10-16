@@ -112,8 +112,8 @@ the ViCare integration. Highlights:
   starts last hour / today, run time today, last run / pause), pumps and their run time today, heating curve target and
   deviation, time program state, sensor status, frost protection, holiday program, solar yields, DHW and circulation.
 * Controls: set points, heating curve, operating mode (select), `climate` per circuit (mode, set point, presets), DHW
-  `water_heater`, switches "Komfortbetrieb" / "Sparbetrieb" per heating circuit (like the ViCare app), boost (DHW, circulation) / permanent
-  operation and reset of the time programs, end of the holiday program.
+  `water_heater`, switches "Komfortbetrieb" / "Sparbetrieb" per heating circuit (like the ViCare app), boost / permanent operation / reset
+  of the DHW and circulation time programs, end of the holiday program.
 * More than the API: exhaust gas temperature, the controller's flow set point, the three outside temperature values,
   eco / party flags, the sensor status incl. "not connected" vs "error", the controller clock and its drift, the
   fault history with timestamps, 5 s burner data, the set point of the active program.
@@ -134,7 +134,8 @@ the ViCare integration. Highlights:
 * `extras/vito_extras.py` only writes to a whitelist: the set point registers, party / eco flags, the days of the four time programs
   and the holiday dates. Time program writes are read back and compared.
 * Boost and permanent operation come from the cloud based ViCare *custom integration*, not from the ViCare app or the controller (the app
-  has no timed boost). They work the same way here (they rewrite the time program): the original day / week is
+  has no timed boost). The heating circuits do not have them any more (operating mode "Dauernd Tagbetrieb" and the comfort / eco switches
+  do this natively); DHW and circulation still do, and they work the same way as before (they rewrite the time program): the original day / week is
   stored in `extras_state.json` **before** anything is written and restored when the boost ends or when "Zeitprogramm
   zurücksetzen" is pressed. On the first start a snapshot of all four time programs is stored in the same file. "Zeitprogramm
   zurücksetzen" ends an active override; it does not restore factory settings.
