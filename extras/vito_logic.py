@@ -148,6 +148,15 @@ def heating_curve_target(outside, room_setpoint, slope, level):
 # --------------------------------------------------------------------------------------------------------------
 # misc
 # --------------------------------------------------------------------------------------------------------------
+def holiday_bytes(day, start):
+    """The 8 bytes the ViCare app writes for a holiday date: BCD 'yyyy mm dd weekday hh mm ss' (weekday ISO, Monday = 1); the start
+    of a holiday carries the time 23:59:59, the end 00:00:00 (the unset marker is 1970-01-01 with the same times)."""
+    def bcd(number):
+        return ((number // 10) << 4) | (number % 10)
+    clock = (23, 59, 59) if start else (0, 0, 0)
+    return bytes([bcd(day.year // 100), bcd(day.year % 100), bcd(day.month), bcd(day.day), bcd(day.isoweekday()), *map(bcd, clock)])
+
+
 def parse_vdatetime(text):
     """'Fr 16.10.2026 09:52:11' -> datetime; None for the unset marker (1970) or garbage."""
     try:

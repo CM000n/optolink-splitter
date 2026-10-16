@@ -88,9 +88,11 @@ RUNTIME = {  # key -> (topic of the on/off state, device key, entity name, max g
     "zirkulationspumpe": ("zirkulationspumpe", "zirkulation", "Pumpe Laufzeit heute", 120),
     "solarpumpe": ("solarpumpe", "solar", "Kreispumpe Laufzeit heute", 120),
 }
-HOLIDAY_REGISTERS = (0x2309, 0x3309, 0x4309)
+HOLIDAY_BASES = (0x2000, 0x3000, 0x4000)                       # the ViCare app writes all three circuits
+HOLIDAY_START, HOLIDAY_END = 0x309, 0x311                    # 8 byte each, relative to the circuit base
+HOLD_HOLIDAY = 20.0                                          # seconds a written date is shown before polled values may override it
 CYCLING_THRESHOLD = 4
-HOLIDAY_UNSET = bytes.fromhex("19700101040000001970010104000000")
+HOLIDAY_UNSET = (bytes.fromhex("1970010104235959"), bytes.fromhex("1970010104000000"))   # start, end, as the app writes them
 INPUTS = [  # splitter topics we need
     "brennermodulation", "brennerstarts", "brennerlaufzeit", "aussentemperatur", "aussentemperatur_gemischt", "sammelstoerung",
     "solar_kollektortemperatur", "solar_speichertemperatur",
@@ -236,6 +238,10 @@ def entity_defs():
         state_topic=f"{EXT}/fehlerhistorie", json_attributes_topic=f"{EXT}/fehlerhistorie/attr")
     add("binary_sensor", "urlaubsprogramm", "anlage", "Urlaubsprogramm", icon="mdi:airplane",
         state_topic=f"{EXT}/urlaubsprogramm")
+    add("date", "urlaubsprogramm_beginn", "anlage", "Urlaubsprogramm Beginn", icon="mdi:airplane-takeoff",
+        state_topic=f"{EXT}/urlaubsprogramm_beginn", command_topic=f"{EXT}/urlaubsprogramm_beginn/set")
+    add("date", "urlaubsprogramm_ende", "anlage", "Urlaubsprogramm Ende", icon="mdi:airplane-landing",
+        state_topic=f"{EXT}/urlaubsprogramm_ende", command_topic=f"{EXT}/urlaubsprogramm_ende/set")
     add("button", "urlaubsprogramm_beenden", "anlage", "Urlaubsprogramm beenden", icon="mdi:airplane-off",
         command_topic=f"{EXT}/urlaubsprogramm_beenden/press", payload_press="PRESS")
     return defs
@@ -271,6 +277,7 @@ class Extras:
         self.sched_lock = threading.RLock()
         self.sync_hold = {}                 # key -> timestamp until which the sync skips that time program
         self.switch_hold = {}               # circuit -> timestamp until which a polled flag does not override a shown command
+        self.holiday_hold = 0.0
         self.sync_error_logged = 0.0
 
     # ---------------- mqtt ----------------
@@ -379,7 +386,7 @@ class Extras:
         for base, _, _ in SCHEDULES.values():
             if length == 8 and base <= addr < base + 56 and (addr - base) % 8 == 0:
                 return True
-        return length == 16 and addr in HOLIDAY_REGISTERS
+        return length == 8 and addr in {base + off for base in HOLIDAY_BASES for off in (HOLIDAY_START, HOLIDAY_END)}
 
     def write(self, addr, data):
         """data: int (1 byte) or bytes. Whitelisted registers only; time programs are read back."""
@@ -437,6 +444,8 @@ class Extras:
             return self.pub(f"{EXT}/{name}", payload[:40], force=True)
         if name == "urlaubsprogramm_beenden":
             return self.end_holiday()
+        if name in ("urlaubsprogramm_beginn", "urlaubsprogramm_ende"):
+            return self.set_holiday_date(name.endswith("beginn"), payload)
         for key in SCHEDULES:
             if name == f"{key}_boost_dauer":
                 minutes = max(10, min(360, int(round(float(payload) / 10.0)) * 10))
@@ -501,8 +510,26 @@ class Extras:
             self.pub(f"{EXT}/{hk}_{'sparbetrieb' if name == 'komfortbetrieb' else 'komfortbetrieb'}", "OFF", force=True)
 
     def end_holiday(self):
-        for addr in HOLIDAY_REGISTERS[1:]:          # M2 and M3 (M1 is unused)
-            self.write(addr, HOLIDAY_UNSET)
+        for base in HOLIDAY_BASES:
+            self.write(base + HOLIDAY_START, HOLIDAY_UNSET[0])
+            self.write(base + HOLIDAY_END, HOLIDAY_UNSET[1])
+        self.holiday_hold = time.time() + HOLD_HOLIDAY
+        for name in ("beginn", "ende"):
+            self.pub(f"{EXT}/urlaubsprogramm_{name}", "None", force=True)
+        self.forcepoll()
+
+    def set_holiday_date(self, start, payload):
+        """Beginn / Ende of the holiday program from a date entity, written to all circuits like the ViCare app does."""
+        day = datetime.strptime(payload.strip()[:10], "%Y-%m-%d").date()
+        other = logic.parse_vdatetime(self.values.get("urlaubsprogramm_ende" if start else "urlaubsprogramm_beginn", ""))
+        if other and (day > other.date() if start else day < other.date()):
+            self.holiday(datetime.now())                         # show the real state again
+            raise ValueError(f"holiday {'start' if start else 'end'} {day} lies {'after the end' if start else 'before the start'}")
+        raw = logic.holiday_bytes(day, start)
+        for base in HOLIDAY_BASES:
+            self.write(base + (HOLIDAY_START if start else HOLIDAY_END), raw)
+        self.holiday_hold = time.time() + HOLD_HOLIDAY
+        self.pub(f"{EXT}/urlaubsprogramm_{'beginn' if start else 'ende'}", day.isoformat(), force=True)
         self.forcepoll()
 
     # ---------------- time program overrides ----------------
@@ -922,6 +949,9 @@ class Extras:
         end = logic.parse_vdatetime(self.values.get("urlaubsprogramm_ende", ""))
         active = bool(start and end and start.date() <= now.date() <= end.date())
         self.pub(f"{EXT}/urlaubsprogramm", "ON" if active else "OFF")
+        if time.time() >= self.holiday_hold:                     # a date that was just written is not overridden by an older poll
+            for name, value in (("beginn", start), ("ende", end)):
+                self.pub(f"{EXT}/urlaubsprogramm_{name}", value.date().isoformat() if value else "None")
 
     def schedule_state(self, key, now):
         if key not in SCHEDULES:

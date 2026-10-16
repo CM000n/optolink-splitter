@@ -155,6 +155,15 @@ class Misc(unittest.TestCase):
         self.assertEqual(v.program_register_offset("standby", False), 0x306)
 
 
+class HolidayTests(unittest.TestCase):
+    def test_holiday_bytes_like_the_app(self):
+        from datetime import date
+        self.assertEqual(v.holiday_bytes(date(2026, 10, 16), True), bytes.fromhex("2026101605235959"))     # as recorded from the app
+        self.assertEqual(v.holiday_bytes(date(2026, 10, 17), False), bytes.fromhex("2026101706000000"))
+        self.assertEqual(v.holiday_bytes(date(1970, 1, 1), True), bytes.fromhex("1970010104235959"))       # unset marker
+        self.assertEqual(v.holiday_bytes(date(1970, 1, 1), False), bytes.fromhex("1970010104000000"))
+
+
 class HeizmodusTests(unittest.TestCase):
     WEEK = [[(360, 1260)]] * 7                      # every day 06:00-21:00
 

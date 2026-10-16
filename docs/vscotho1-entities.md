@@ -18,9 +18,9 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 | `binary_sensor.vito_sammelstoerung` | Sammelstörung | primary | splitter |
 | `binary_sensor.vito_urlaubsprogramm` | Urlaubsprogramm | primary | extras |
 | `button.vito_urlaubsprogramm_beenden` | Urlaubsprogramm beenden | primary | extras |
+| `date.vito_urlaubsprogramm_beginn` | Urlaubsprogramm Beginn | primary | extras |
+| `date.vito_urlaubsprogramm_ende` | Urlaubsprogramm Ende | primary | extras |
 | `sensor.vito_aussentemperatur` | Außentemperatur | primary | splitter |
-| `sensor.vito_urlaubsprogramm_beginn` | Urlaubsprogramm Beginn | primary | splitter |
-| `sensor.vito_urlaubsprogramm_ende` | Urlaubsprogramm Ende | primary | splitter |
 | `binary_sensor.vito_anlagenzeit_abweichung` | Anlagenzeit weicht ab | diagnostic | splitter |
 | `binary_sensor.vito_aussentemperatur_sensorfehler` | Außentemperatur Sensorfehler | diagnostic | splitter |
 | `sensor.vito_aussentemperatur_gedaempft` | Außentemperatur gedämpft | diagnostic | splitter |
@@ -184,6 +184,8 @@ Published on MQTT (`<topic>/<name>`), consumed by `extras/vito_extras.py` or kep
 | `hk2_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |
 | `hk2_zeitprogramm_roh_2` | Zeitprogramm (Rohdaten 2) |
 | `solarertrag_tageswerte_roh` | Solarertrag Tageswerte (Rohdaten) |
+| `urlaubsprogramm_beginn` | Urlaubsprogramm Beginn (Rohwert) |
+| `urlaubsprogramm_ende` | Urlaubsprogramm Ende (Rohwert) |
 | `warmwasser_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |
 | `warmwasser_zeitprogramm_roh_2` | Zeitprogramm (Rohdaten 2) |
 | `zirkulation_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |

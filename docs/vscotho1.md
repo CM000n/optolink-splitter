@@ -75,7 +75,7 @@ M1 (`0x2000`) is unused here. Offsets relative to the base:
 | `0x302` / `0x303` | eco ("Spar") / party = comfort **status**, set by the controller (a direct write is cleared again within seconds) |
 | `0x330` / `0x331` | comfort / eco **command**: 1 = on, 0 = off (comfort uses the set point `0x308`). This is what the ViCare app writes, writable. Activating one cancels the other; eco only holds in a normal phase of the time program (the app shows its tile only then) |
 | `0x306` / `0x307` / `0x308` | normal / reduced / comfort room set point, 1 byte in deg C, writable |
-| `0x309` / `0x311` | holiday start / end, 8 byte BCD each (`1970-01-01` = unset), writable |
+| `0x309` / `0x311` | holiday start / end, 8 byte BCD each `yyyy mm dd weekday hh mm ss` (weekday ISO, Monday 1): the app writes the same dates to all three circuits (`0x2309`, `0x3309`, `0x4309` and `+8`), start with the time `23:59:59`, end with `00:00:00`; unset = `1970-01-01` with the same times; writable |
 | `0x323` | operating mode (select "Betriebsart", wording as in the ViCare app): 0 "Aus", 1 "Nur Warmwasser aktiv", 2 "Heizung & Warmwasser aktiv" (time program), 3 "Dauernd reduziert", 4 "Dauernd Tagbetrieb", writable |
 | `0x500` | status block; byte 1 = **active program** (0 standby, 1 reduced, 2 normal, 3 permanently normal; follows the time program; comfort has no value of its own: byte 1 stays 2 and the party flag is 1), bytes 12-13 = set point of the active program (x0.1) |
 | `0x544` | flow set point of the controller (x0.1) |
@@ -113,7 +113,7 @@ the ViCare integration. Highlights:
   deviation, time program state, sensor status, frost protection, holiday program, solar yields, DHW and circulation.
 * Controls: set points, heating curve, operating mode (select), `climate` per circuit (mode, set point, presets), DHW
   `water_heater`, switches "Komfortbetrieb" / "Sparbetrieb" per heating circuit (like the ViCare app), boost / permanent operation / reset
-  of the DHW and circulation time programs, end of the holiday program.
+  of the DHW and circulation time programs, holiday program (date entities for start and end like in the app, plus "beenden").
 * More than the API: exhaust gas temperature, the controller's flow set point, the three outside temperature values,
   eco / party flags, the sensor status incl. "not connected" vs "error", the controller clock and its drift, the
   fault history with timestamps, 5 s burner data, the set point of the active program.

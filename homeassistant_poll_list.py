@@ -100,10 +100,6 @@ TIME_DRIFT = (
     "{% set t = strptime(value[3:], '%d.%m.%Y %H:%M:%S').replace(tzinfo=now().tzinfo) %}"
     "{{ 'true' if (t is not none and ((now() - t).total_seconds() | abs < 400)) else 'false' }}"
 )
-HOLIDAY_DATE = (
-    "{% set d = value[3:13] %}{% if d[6:10] == '1970' or d | length < 10 %}{{ none }}"
-    "{% else %}{{ strptime(d, '%d.%m.%Y').date().isoformat() }}{% endif %}"
-)
 
 # --------------------------------------------------------------------------------------------------------------
 # Anlage
@@ -171,25 +167,16 @@ poll(
     value_template=TIME_DRIFT,
     **A,
 )
-poll(
-    "sensor",
+# holiday program dates of the first circuit (the ViCare app writes all three circuits alike); the date entities
+# "Urlaubsprogramm Beginn / Ende" of extras/vito_extras.py show and set them
+hidden(
     "urlaubsprogramm_beginn",
     ("SOMETIMES", 0x3309, 16, "b:0:7", "vdatetime"),
-    name="Urlaubsprogramm Beginn",
-    icon="mdi:airplane-takeoff",
-    device_class="date",
-    value_template=HOLIDAY_DATE,
+    name="Urlaubsprogramm Beginn (Rohwert)",
     **A,
 )
-poll(
-    "sensor",
-    "urlaubsprogramm_ende",
-    ("SOMETIMES", 0x3309, 16, "b:8:15", "vdatetime"),
-    name="Urlaubsprogramm Ende",
-    icon="mdi:airplane-landing",
-    device_class="date",
-    value_template=HOLIDAY_DATE,
-    **A,
+hidden(
+    "urlaubsprogramm_ende", ("SOMETIMES", 0x3309, 16, "b:8:15", "vdatetime"), name="Urlaubsprogramm Ende (Rohwert)", **A
 )
 
 # --------------------------------------------------------------------------------------------------------------

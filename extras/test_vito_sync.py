@@ -5,6 +5,7 @@ Needs the splitter's environment (paho-mqtt, settings): run from the repository 
 import os
 import tempfile
 import unittest
+from datetime import datetime
 
 import vito_extras as ex
 import vito_logic as logic
@@ -116,6 +117,48 @@ class ProgramSwitchTests(unittest.TestCase):
     def test_writes_are_limited_to_the_whitelist(self):
         self.assertTrue(all(ex.Extras.write_allowed(a, 1) for a in (0x4330, 0x4331, 0x3330, 0x3331)))
         self.assertFalse(ex.Extras.write_allowed(0x4303, 1))          # the status flag is not a command
+
+
+class HolidayCommandTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        ex.STATE_FILE = os.path.join(self.tmp.name, "state.json")
+        self.x = FakeExtras()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_start_is_written_to_all_circuits_like_the_app(self):
+        self.x.handle_command("urlaubsprogramm_beginn/set", "2026-10-16")
+        raw = bytes.fromhex("2026101605235959")                     # as recorded from the app
+        self.assertEqual(self.x.reg_writes, [(0x2309, raw), (0x3309, raw), (0x4309, raw)])
+        self.assertEqual(self.x.published["VitoExt/urlaubsprogramm_beginn"], "2026-10-16")
+
+    def test_end_before_the_start_is_refused_and_the_real_state_shown(self):
+        self.x.values.update({"urlaubsprogramm_beginn": "Mo 19.10.2026 23:59:59", "urlaubsprogramm_ende": "Fr 20.11.2026 00:00:00"})
+        with self.assertRaises(ValueError):
+            self.x.handle_command("urlaubsprogramm_ende/set", "2026-10-18")
+        self.assertEqual(self.x.reg_writes, [])
+        self.assertEqual(self.x.published["VitoExt/urlaubsprogramm_ende"], "2026-11-20")
+
+    def test_end_holiday_writes_the_unset_marker_to_all_circuits(self):
+        self.x.handle_command("urlaubsprogramm_beenden/press", "PRESS")
+        start, end = bytes.fromhex("1970010104235959"), bytes.fromhex("1970010104000000")
+        self.assertEqual(self.x.reg_writes, [(0x2309, start), (0x2311, end), (0x3309, start), (0x3311, end), (0x4309, start), (0x4311, end)])
+        self.assertEqual((self.x.published["VitoExt/urlaubsprogramm_beginn"], self.x.published["VitoExt/urlaubsprogramm_ende"]), ("None", "None"))
+
+    def test_polled_dates_are_shown_after_the_hold(self):
+        self.x.values.update({"urlaubsprogramm_beginn": "Mo 19.10.2026 23:59:59", "urlaubsprogramm_ende": "Fr 20.11.2026 00:00:00"})
+        self.x.holiday(datetime(2026, 10, 17, 12))
+        self.assertEqual((self.x.published["VitoExt/urlaubsprogramm_beginn"], self.x.published["VitoExt/urlaubsprogramm_ende"]), ("2026-10-19", "2026-11-20"))
+        self.assertEqual(self.x.published["VitoExt/urlaubsprogramm"], "OFF")                  # not started yet
+        self.x.holiday(datetime(2026, 10, 25, 12))
+        self.assertEqual(self.x.published["VitoExt/urlaubsprogramm"], "ON")
+
+    def test_only_the_holiday_registers_of_the_circuits_are_writable_with_8_bytes(self):
+        self.assertTrue(all(ex.Extras.write_allowed(a, 8) for a in (0x2309, 0x2311, 0x3309, 0x3311, 0x4309, 0x4311)))
+        self.assertFalse(ex.Extras.write_allowed(0x4309, 16))
+        self.assertFalse(ex.Extras.write_allowed(0x4310, 8))
 
 
 class SyncTests(unittest.TestCase):
