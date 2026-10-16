@@ -136,8 +136,12 @@ the ViCare integration. Highlights:
   stored in `extras_state.json` **before** anything is written and restored when the boost ends or when "Zeitprogramm
   zurücksetzen" is pressed. On the first start a snapshot of all four time programs is stored in the same file. "Zeitprogramm
   zurücksetzen" ends an active override; it does not restore factory settings.
-* The climate set point writes the register of the active program (normal / reduced / comfort). In "forced normal" mode the controller
-  clears the party flag again, so the preset *comfort* has no lasting effect on such a circuit.
+* The climate set point writes the set point register of the active program (normal / reduced; comfort while the party flag is on).
+* The preset *comfort* writes the command register `0x?330` like the ViCare app. Verified in time program mode: set point 22 °C,
+  party flag on after the next poll, "home" switches it off again. A direct write of the party flag `0x?303` does not stick
+  (it is only the status). Not tested in "permanently normal" / "permanently reduced" mode.
+* Everything the ViCare app writes can be recorded with `tools/mqtt_timeline.py` (Vitoconnect requests next to polled registers);
+  this is how the registers above were found.
 
 ## Schedule helpers (time programs in Home Assistant)
 
