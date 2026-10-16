@@ -1,171 +1,190 @@
+ERROR importing settings module: No module named 'settings_ini'
 # Entities of the Vitotronic 200 (VScotHO1) integration
 
-Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito_extras.py` (source *extras*).
-135 entities in 8 devices. Entity ids are `<domain>.vito_<name>`; the display names are German like in Home Assistant.
+Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito_extras.py` (source *extras*) by `tools/entity_doc.py`.
+115 entities in 9 devices. Entity ids are `<domain>.vito_<name>`; the display names are German like in
+Home Assistant. Home Assistant sorts the entities of a device by category (controls, sensors, configuration, diagnostic) and then by name.
 
 ## Viessmann Heizung
 
-| Entity | Name | Source |
-|---|---|---|
-| `button.vito_forcepoll` | Alle Werte neu lesen | splitter |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `button.vito_forcepoll` | Alle Werte neu lesen | diagnostic | splitter |
 
 ## Heizung Anlage
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_anlagenzeit_abweichung` | Anlagenzeit weicht ab | splitter |
-| `binary_sensor.vito_aussentemperatur_sensorfehler` | Außentemperatur Sensorfehler | splitter |
-| `binary_sensor.vito_sammelstoerung` | Sammelstörung | splitter |
-| `binary_sensor.vito_urlaubsprogramm` | Urlaubsprogramm | extras |
-| `button.vito_urlaubsprogramm_beenden` | Urlaubsprogramm beenden | extras |
-| `sensor.vito_aussentemperatur` | Außentemperatur | splitter |
-| `sensor.vito_aussentemperatur_gedaempft` | Außentemperatur gedämpft | splitter |
-| `sensor.vito_aussentemperatur_gefiltert` | Außentemperatur gefiltert | splitter |
-| `sensor.vito_aussentemperatur_gemischt` | Außentemperatur gemischt (Regelung) | splitter |
-| `sensor.vito_fehlerhistorie` | Letzter Fehler | extras |
-| `sensor.vito_regler_seriennummer` | Regler Seriennummer | splitter |
-| `sensor.vito_urlaubsprogramm_beginn` | Urlaubsprogramm Beginn | splitter |
-| `sensor.vito_urlaubsprogramm_ende` | Urlaubsprogramm Ende | splitter |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_sammelstoerung` | Sammelstörung | primary | splitter |
+| `binary_sensor.vito_urlaubsprogramm` | Urlaubsprogramm | primary | extras |
+| `button.vito_urlaubsprogramm_beenden` | Urlaubsprogramm beenden | primary | extras |
+| `sensor.vito_aussentemperatur` | Außentemperatur | primary | splitter |
+| `sensor.vito_urlaubsprogramm_beginn` | Urlaubsprogramm Beginn | primary | splitter |
+| `sensor.vito_urlaubsprogramm_ende` | Urlaubsprogramm Ende | primary | splitter |
+| `binary_sensor.vito_anlagenzeit_abweichung` | Anlagenzeit weicht ab | diagnostic | splitter |
+| `binary_sensor.vito_aussentemperatur_sensorfehler` | Außentemperatur Sensorfehler | diagnostic | splitter |
+| `sensor.vito_aussentemperatur_gedaempft` | Außentemperatur gedämpft | diagnostic | splitter |
+| `sensor.vito_aussentemperatur_gefiltert` | Außentemperatur gefiltert | diagnostic | splitter |
+| `sensor.vito_aussentemperatur_gemischt` | Außentemperatur gemischt (Regelung) | diagnostic | splitter |
+| `sensor.vito_fehlerhistorie` | Letzter Fehler | diagnostic | extras |
+| `sensor.vito_regler_seriennummer` | Regler Seriennummer | diagnostic | splitter |
 
 ## Heizung Kessel
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_brenner_aktiv` | Brenner | splitter |
-| `binary_sensor.vito_brenner_taktung` | Brenner Taktung | extras |
-| `binary_sensor.vito_interne_kesselpumpe` | Interne Kesselpumpe | splitter |
-| `binary_sensor.vito_kesseltemperatur_sensorfehler` | Temperatur Sensorfehler | splitter |
-| `sensor.vito_abgastemperatur` | Abgastemperatur | splitter |
-| `sensor.vito_brenner_automatik` | Brenner Automatik | extras |
-| `sensor.vito_brenner_automatik_fehlercode` | Brenner Automatik Fehlercode | extras |
-| `sensor.vito_brenner_automatik_fehlerdetails` | Brenner Automatik Fehlerdetails | extras |
-| `sensor.vito_brenner_fehlerstatus` | Brenner Fehlerstatus | extras |
-| `sensor.vito_brenner_fehlerstatus_fehlercode` | Brenner Fehlerstatus Fehlercode | extras |
-| `sensor.vito_brenner_fehlerstatus_fehlerdetails` | Brenner Fehlerstatus Fehlerdetails | extras |
-| `sensor.vito_brenner_laufzeit_heute` | Brenner Laufzeit heute | extras |
-| `sensor.vito_brenner_laufzeit_pro_start` | Brenner Ø Laufzeit pro Start | extras |
-| `sensor.vito_brenner_letzte_laufzeit` | Brenner letzte Laufzeit | extras |
-| `sensor.vito_brenner_letzte_pause` | Brenner letzte Pause | extras |
-| `sensor.vito_brenner_starts_heute` | Brenner Starts heute | extras |
-| `sensor.vito_brenner_starts_letzte_stunde` | Brenner Starts letzte Stunde | extras |
-| `sensor.vito_brennerlaufzeit` | Brennerbetriebsstunden | splitter |
-| `sensor.vito_brennermodulation` | Brennermodulation | splitter |
-| `sensor.vito_brennerstarts` | Brennerstarts | splitter |
-| `sensor.vito_interne_kesselpumpe_laufzeit_heute` | Interne Kesselpumpe Laufzeit heute | extras |
-| `sensor.vito_kesselsolltemperatur` | Solltemperatur | splitter |
-| `sensor.vito_kesseltemperatur` | Kesseltemperatur | splitter |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_interne_kesselpumpe` | Interne Kesselpumpe | primary | splitter |
+| `sensor.vito_abgastemperatur` | Abgastemperatur | primary | splitter |
+| `sensor.vito_kesseltemperatur` | Kesseltemperatur | primary | splitter |
+| `sensor.vito_kesselsolltemperatur` | Solltemperatur | primary | splitter |
+| `binary_sensor.vito_kesseltemperatur_sensorfehler` | Temperatur Sensorfehler | diagnostic | splitter |
+| `sensor.vito_interne_kesselpumpe_laufzeit_heute` | Interne Kesselpumpe Laufzeit heute | diagnostic | extras |
+
+## Heizung Brenner
+
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_brenner_aktiv` | Aktiv | primary | splitter |
+| `binary_sensor.vito_brenner_taktung` | Taktung | primary | extras |
+| `sensor.vito_brenner_laufzeit_heute` | Laufzeit heute | primary | extras |
+| `sensor.vito_brennermodulation` | Modulation | primary | splitter |
+| `sensor.vito_brenner_starts_heute` | Starts heute | primary | extras |
+| `sensor.vito_brenner_automatik` | Automatik | diagnostic | extras |
+| `sensor.vito_brenner_automatik_fehlercode` | Automatik Fehlercode | diagnostic | extras |
+| `sensor.vito_brenner_automatik_fehlerdetails` | Automatik Fehlerdetails | diagnostic | extras |
+| `sensor.vito_brennerlaufzeit` | Betriebsstunden | diagnostic | splitter |
+| `sensor.vito_brenner_fehlerstatus` | Fehlerstatus | diagnostic | extras |
+| `sensor.vito_brenner_fehlerstatus_fehlercode` | Fehlerstatus Fehlercode | diagnostic | extras |
+| `sensor.vito_brenner_fehlerstatus_fehlerdetails` | Fehlerstatus Fehlerdetails | diagnostic | extras |
+| `sensor.vito_brenner_letzte_laufzeit` | Letzte Laufzeit | diagnostic | extras |
+| `sensor.vito_brenner_letzte_pause` | Letzte Pause | diagnostic | extras |
+| `sensor.vito_brennerstarts` | Starts gesamt | diagnostic | splitter |
+| `sensor.vito_brenner_starts_letzte_stunde` | Starts letzte Stunde | diagnostic | extras |
+| `sensor.vito_brenner_laufzeit_pro_start` | Ø Laufzeit pro Start | diagnostic | extras |
 
 ## Heizung Warmwasser
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_warmwasser_aufladung` | WW-Aufladung | splitter |
-| `binary_sensor.vito_warmwasser_auslauftemperatur_sensorfehler` | Auslauftemperatur Sensorfehler | splitter |
-| `binary_sensor.vito_warmwasser_ladepumpe` | WW-Pumpe | splitter |
-| `binary_sensor.vito_warmwasser_speichertemperatur_sensorfehler` | Speichertemperatur Sensorfehler | splitter |
-| `button.vito_warmwasser_boost` | Boost | extras |
-| `button.vito_warmwasser_zeitprogramm_zuruecksetzen` | Zeitprogramm zurücksetzen | extras |
-| `number.vito_warmwasser_boost_dauer` | Boost-Dauer | extras |
-| `number.vito_warmwasser_solltemperatur` | WW-Temperatur | splitter |
-| `sensor.vito_warmwasser_ladepumpe_laufzeit_heute` | Speicherladepumpe Laufzeit heute | extras |
-| `sensor.vito_warmwasser_speichertemperatur` | WW-Speichertemperatur | splitter |
-| `sensor.vito_warmwasser_zeitprogramm` | Zeitprogramm | extras |
-| `switch.vito_warmwasser_dauerbetrieb` | Dauerbetrieb | extras |
-| `water_heater.vito_warmwasser` | (device name) | splitter |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_warmwasser_aufladung` | Aufladung | primary | splitter |
+| `binary_sensor.vito_warmwasser_ladepumpe` | Ladepumpe | primary | splitter |
+| `binary_sensor.vito_warmwasser_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
+| `button.vito_warmwasser_boost` | Zusatzaufheizung starten | primary | extras |
+| `button.vito_warmwasser_zeitprogramm_zuruecksetzen` | Überbrückung beenden | primary | extras |
+| `number.vito_warmwasser_solltemperatur` | Solltemperatur | primary | splitter |
+| `sensor.vito_warmwasser_speichertemperatur` | Speichertemperatur | primary | splitter |
+| `switch.vito_warmwasser_dauerbetrieb` | Dauerbetrieb (Zeitprogramm überbrückt) | primary | extras |
+| `water_heater.vito_warmwasser` | (device name) | primary | splitter |
+| `number.vito_warmwasser_boost_dauer` | Dauer Zusatzaufheizung | config | extras |
+| `binary_sensor.vito_warmwasser_auslauftemperatur_sensorfehler` | Auslauftemperatur Sensorfehler | diagnostic | splitter |
+| `binary_sensor.vito_warmwasser_speichertemperatur_sensorfehler` | Speichertemperatur Sensorfehler | diagnostic | splitter |
+| `sensor.vito_warmwasser_ladepumpe_laufzeit_heute` | Ladepumpe Laufzeit heute | diagnostic | extras |
+| `sensor.vito_warmwasser_zeitprogramm` | Zeitplan (aktuell) | diagnostic | extras |
 
 ## Heizung Zirkulation
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_zirkulationspumpe` | WW-Zirkulationspumpe | splitter |
-| `button.vito_zirkulation_boost` | Pumpe Boost | extras |
-| `button.vito_zirkulation_zeitprogramm_zuruecksetzen` | Zeitprogramm zurücksetzen | extras |
-| `number.vito_zirkulation_boost_dauer` | Pumpe Boost-Dauer | extras |
-| `sensor.vito_zirkulation_zeitprogramm` | Zeitprogramm | extras |
-| `sensor.vito_zirkulationspumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
-| `switch.vito_zirkulation_dauerbetrieb` | Pumpe Dauerbetrieb | extras |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_zirkulationspumpe` | WW-Zirkulationspumpe | primary | splitter |
+| `binary_sensor.vito_zirkulation_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
+| `button.vito_zirkulation_boost` | Zusatzlauf starten | primary | extras |
+| `button.vito_zirkulation_zeitprogramm_zuruecksetzen` | Überbrückung beenden | primary | extras |
+| `switch.vito_zirkulation_dauerbetrieb` | Dauerbetrieb (Zeitprogramm überbrückt) | primary | extras |
+| `number.vito_zirkulation_boost_dauer` | Dauer Zusatzlauf | config | extras |
+| `sensor.vito_zirkulationspumpe_laufzeit_heute` | Pumpe Laufzeit heute | diagnostic | extras |
+| `sensor.vito_zirkulation_zeitprogramm` | Zeitplan (aktuell) | diagnostic | extras |
 
 ## Heizung Solar
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_solar_kollektortemperatur_sensorfehler` | Kollektortemperatur Sensorfehler | splitter |
-| `binary_sensor.vito_solar_nachladeunterdrueckung` | Nachladeunterdrückung | splitter |
-| `binary_sensor.vito_solar_speichertemperatur_sensorfehler` | Speichertemperatur Sensorfehler | splitter |
-| `binary_sensor.vito_solarpumpe` | Solarpumpe | splitter |
-| `sensor.vito_solar_gesamtertrag` | Gesamtertrag | splitter |
-| `sensor.vito_solar_kollektortemperatur` | Solarkollektor-Temperatur | splitter |
-| `sensor.vito_solar_speichertemperatur` | Solarspeicher-Temperatur | splitter |
-| `sensor.vito_solar_temperaturdifferenz_kollektor_speicher` | Temperaturdifferenz Kollektor/Speicher | extras |
-| `sensor.vito_solarertrag_gestern` | Ertrag gestern | splitter |
-| `sensor.vito_solarertrag_heute` | Ertrag heute | splitter |
-| `sensor.vito_solarertrag_letzte_7_tage` | Ertrag letzte 7 Tage | splitter |
-| `sensor.vito_solarpumpe_laufzeit_heute` | Kreispumpe Laufzeit heute | extras |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_solar_nachladeunterdrueckung` | Nachladeunterdrückung | primary | splitter |
+| `binary_sensor.vito_solarpumpe` | Solarpumpe | primary | splitter |
+| `sensor.vito_solarertrag_gestern` | Ertrag gestern | primary | splitter |
+| `sensor.vito_solarertrag_heute` | Ertrag heute | primary | splitter |
+| `sensor.vito_solarertrag_letzte_7_tage` | Ertrag letzte 7 Tage | primary | splitter |
+| `sensor.vito_solar_gesamtertrag` | Gesamtertrag | primary | splitter |
+| `sensor.vito_solar_kollektortemperatur` | Solarkollektor-Temperatur | primary | splitter |
+| `sensor.vito_solar_speichertemperatur` | Solarspeicher-Temperatur | primary | splitter |
+| `sensor.vito_solar_temperaturdifferenz_kollektor_speicher` | Temperaturdifferenz Kollektor/Speicher | primary | extras |
+| `binary_sensor.vito_solar_kollektortemperatur_sensorfehler` | Kollektortemperatur Sensorfehler | diagnostic | splitter |
+| `binary_sensor.vito_solar_speichertemperatur_sensorfehler` | Speichertemperatur Sensorfehler | diagnostic | splitter |
+| `sensor.vito_solarpumpe_laufzeit_heute` | Kreispumpe Laufzeit heute | diagnostic | extras |
 
 ## Heizkreis 1 (Fußbodenheizung)
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_hk1_betriebsart_dauernd_normal` | Betriebsart Dauernd Tagbetrieb | splitter |
-| `binary_sensor.vito_hk1_betriebsart_dauernd_reduziert` | Betriebsart Dauernd reduziert | splitter |
-| `binary_sensor.vito_hk1_betriebsart_heizen_warmwasser` | Betriebsart Heizung & Warmwasser aktiv | splitter |
-| `binary_sensor.vito_hk1_betriebsart_standby` | Betriebsart Aus | splitter |
-| `binary_sensor.vito_hk1_betriebsart_warmwasser` | Betriebsart Nur Warmwasser aktiv | splitter |
-| `binary_sensor.vito_hk1_frostschutz` | Frostschutz | splitter |
-| `binary_sensor.vito_hk1_programm_normal` | Heizphase Normal | splitter |
-| `binary_sensor.vito_hk1_programm_reduziert` | Heizphase Reduziert | splitter |
-| `binary_sensor.vito_hk1_programm_standby` | Heizphase Aus | splitter |
-| `binary_sensor.vito_hk1_pumpe` | Heizkreisumwälzpumpe | splitter |
-| `binary_sensor.vito_hk1_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
-| `climate.vito_hk1_heizung` | (device name) | splitter |
-| `number.vito_hk1_heizkurve_niveau` | Verschiebung der Heizkurve | splitter |
-| `number.vito_hk1_heizkurve_steigung` | Steigung der Heizkurve | splitter |
-| `number.vito_hk1_komforttemperatur` | Komforttemperatur | splitter |
-| `number.vito_hk1_normaltemperatur` | Normaltemperatur | splitter |
-| `number.vito_hk1_reduzierte_temperatur` | Reduzierte Temperatur | splitter |
-| `select.vito_hk1_betriebsart` | Betriebsart | splitter |
-| `sensor.vito_hk1_programm` | Aktiver Heizmodus | extras |
-| `switch.vito_hk1_komfortbetrieb` | Komfortbetrieb | extras |
-| `switch.vito_hk1_sparbetrieb` | Sparbetrieb | extras |
-| `sensor.vito_hk1_pumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
-| `sensor.vito_hk1_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | splitter |
-| `sensor.vito_hk1_soll_vorlauftemperatur_heizkurve` | Soll-Vorlauftemperatur (Heizkurve) | extras |
-| `sensor.vito_hk1_vorlauf_abweichung_zur_heizkurve` | Vorlauf Abweichung zur Heizkurve | extras |
-| `sensor.vito_hk1_vorlaufsolltemperatur` | Vorlauf-Solltemperatur (Regler) | splitter |
-| `sensor.vito_hk1_vorlauftemperatur` | Vorlauftemperatur | splitter |
-| `sensor.vito_hk1_zeitprogramm` | Zeitprogramm | extras |
-| `text.vito_hk1_name` | Name | extras |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_hk1_frostschutz` | Frostschutz | primary | splitter |
+| `binary_sensor.vito_hk1_pumpe` | Umwälzpumpe | primary | splitter |
+| `binary_sensor.vito_hk1_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
+| `climate.vito_hk1_heizung` | (device name) | primary | splitter |
+| `number.vito_hk1_komforttemperatur` | Solltemperatur Komfort | primary | splitter |
+| `number.vito_hk1_normaltemperatur` | Solltemperatur Normal | primary | splitter |
+| `number.vito_hk1_reduzierte_temperatur` | Solltemperatur Reduziert | primary | splitter |
+| `select.vito_hk1_betriebsart` | Betriebsart | primary | splitter |
+| `sensor.vito_hk1_programm` | Aktiver Heizmodus | primary | extras |
+| `sensor.vito_hk1_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | primary | splitter |
+| `sensor.vito_hk1_vorlauftemperatur` | Vorlauftemperatur | primary | splitter |
+| `switch.vito_hk1_komfortbetrieb` | Komfortbetrieb | primary | extras |
+| `switch.vito_hk1_sparbetrieb` | Sparbetrieb | primary | extras |
+| `number.vito_hk1_heizkurve_steigung` | Heizkurve Steigung | config | splitter |
+| `number.vito_hk1_heizkurve_niveau` | Heizkurve Verschiebung | config | splitter |
+| `text.vito_hk1_name` | Name | config | extras |
+| `binary_sensor.vito_hk1_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | diagnostic | splitter |
+| `sensor.vito_hk1_pumpe_laufzeit_heute` | Umwälzpumpe Laufzeit heute | diagnostic | extras |
+| `sensor.vito_hk1_vorlauf_abweichung_zur_heizkurve` | Vorlauf Abweichung (Heizkurve) | diagnostic | extras |
+| `sensor.vito_hk1_soll_vorlauftemperatur_heizkurve` | Vorlauf Soll (Heizkurve) | diagnostic | extras |
+| `sensor.vito_hk1_vorlaufsolltemperatur` | Vorlauf Soll (Regler) | diagnostic | splitter |
+| `sensor.vito_hk1_zeitprogramm` | Zeitplan (aktuelle Phase) | diagnostic | extras |
 
 ## Heizkreis 2 (Heizkörper)
 
-| Entity | Name | Source |
-|---|---|---|
-| `binary_sensor.vito_hk2_betriebsart_dauernd_normal` | Betriebsart Dauernd Tagbetrieb | splitter |
-| `binary_sensor.vito_hk2_betriebsart_dauernd_reduziert` | Betriebsart Dauernd reduziert | splitter |
-| `binary_sensor.vito_hk2_betriebsart_heizen_warmwasser` | Betriebsart Heizung & Warmwasser aktiv | splitter |
-| `binary_sensor.vito_hk2_betriebsart_standby` | Betriebsart Aus | splitter |
-| `binary_sensor.vito_hk2_betriebsart_warmwasser` | Betriebsart Nur Warmwasser aktiv | splitter |
-| `binary_sensor.vito_hk2_frostschutz` | Frostschutz | splitter |
-| `binary_sensor.vito_hk2_programm_normal` | Heizphase Normal | splitter |
-| `binary_sensor.vito_hk2_programm_reduziert` | Heizphase Reduziert | splitter |
-| `binary_sensor.vito_hk2_programm_standby` | Heizphase Aus | splitter |
-| `binary_sensor.vito_hk2_pumpe` | Heizkreisumwälzpumpe | splitter |
-| `binary_sensor.vito_hk2_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
-| `climate.vito_hk2_heizung` | (device name) | splitter |
-| `number.vito_hk2_heizkurve_niveau` | Verschiebung der Heizkurve | splitter |
-| `number.vito_hk2_heizkurve_steigung` | Steigung der Heizkurve | splitter |
-| `number.vito_hk2_komforttemperatur` | Komforttemperatur | splitter |
-| `number.vito_hk2_normaltemperatur` | Normaltemperatur | splitter |
-| `number.vito_hk2_reduzierte_temperatur` | Reduzierte Temperatur | splitter |
-| `select.vito_hk2_betriebsart` | Betriebsart | splitter |
-| `sensor.vito_hk2_programm` | Aktiver Heizmodus | extras |
-| `switch.vito_hk2_komfortbetrieb` | Komfortbetrieb | extras |
-| `switch.vito_hk2_sparbetrieb` | Sparbetrieb | extras |
-| `sensor.vito_hk2_pumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
-| `sensor.vito_hk2_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | splitter |
-| `sensor.vito_hk2_soll_vorlauftemperatur_heizkurve` | Soll-Vorlauftemperatur (Heizkurve) | extras |
-| `sensor.vito_hk2_vorlauf_abweichung_zur_heizkurve` | Vorlauf Abweichung zur Heizkurve | extras |
-| `sensor.vito_hk2_vorlaufsolltemperatur` | Vorlauf-Solltemperatur (Regler) | splitter |
-| `sensor.vito_hk2_vorlauftemperatur` | Vorlauftemperatur | splitter |
-| `sensor.vito_hk2_zeitprogramm` | Zeitprogramm | extras |
-| `text.vito_hk2_name` | Name | extras |
+| Entity | Name | Category | Source |
+|---|---|---|---|
+| `binary_sensor.vito_hk2_frostschutz` | Frostschutz | primary | splitter |
+| `binary_sensor.vito_hk2_pumpe` | Umwälzpumpe | primary | splitter |
+| `binary_sensor.vito_hk2_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
+| `climate.vito_hk2_heizung` | (device name) | primary | splitter |
+| `number.vito_hk2_komforttemperatur` | Solltemperatur Komfort | primary | splitter |
+| `number.vito_hk2_normaltemperatur` | Solltemperatur Normal | primary | splitter |
+| `number.vito_hk2_reduzierte_temperatur` | Solltemperatur Reduziert | primary | splitter |
+| `select.vito_hk2_betriebsart` | Betriebsart | primary | splitter |
+| `sensor.vito_hk2_programm` | Aktiver Heizmodus | primary | extras |
+| `sensor.vito_hk2_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | primary | splitter |
+| `sensor.vito_hk2_vorlauftemperatur` | Vorlauftemperatur | primary | splitter |
+| `switch.vito_hk2_komfortbetrieb` | Komfortbetrieb | primary | extras |
+| `switch.vito_hk2_sparbetrieb` | Sparbetrieb | primary | extras |
+| `number.vito_hk2_heizkurve_steigung` | Heizkurve Steigung | config | splitter |
+| `number.vito_hk2_heizkurve_niveau` | Heizkurve Verschiebung | config | splitter |
+| `text.vito_hk2_name` | Name | config | extras |
+| `binary_sensor.vito_hk2_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | diagnostic | splitter |
+| `sensor.vito_hk2_pumpe_laufzeit_heute` | Umwälzpumpe Laufzeit heute | diagnostic | extras |
+| `sensor.vito_hk2_vorlauf_abweichung_zur_heizkurve` | Vorlauf Abweichung (Heizkurve) | diagnostic | extras |
+| `sensor.vito_hk2_soll_vorlauftemperatur_heizkurve` | Vorlauf Soll (Heizkurve) | diagnostic | extras |
+| `sensor.vito_hk2_vorlaufsolltemperatur` | Vorlauf Soll (Regler) | diagnostic | splitter |
+| `sensor.vito_hk2_zeitprogramm` | Zeitplan (aktuelle Phase) | diagnostic | extras |
+
+## Data points without an entity
+
+Published on MQTT (`<topic>/<name>`), consumed by `extras/vito_extras.py` or kept for diagnostics.
+
+| Data point | Name |
+|---|---|
+| `hk1_betriebsprogramm_roh` | Betriebsprogramm (Rohwert) |
+| `hk1_partybetrieb` | Komfortbetrieb (Status) |
+| `hk1_programm` | Programm (Phase, Rohwert) |
+| `hk1_sparbetrieb` | Sparbetrieb (Status) |
+| `hk1_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |
+| `hk1_zeitprogramm_roh_2` | Zeitprogramm (Rohdaten 2) |
+| `hk2_betriebsprogramm_roh` | Betriebsprogramm (Rohwert) |
+| `hk2_partybetrieb` | Komfortbetrieb (Status) |
+| `hk2_programm` | Programm (Phase, Rohwert) |
+| `hk2_sparbetrieb` | Sparbetrieb (Status) |
+| `hk2_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |
+| `hk2_zeitprogramm_roh_2` | Zeitprogramm (Rohdaten 2) |
+| `solarertrag_tageswerte_roh` | Solarertrag Tageswerte (Rohdaten) |
+| `warmwasser_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |
+| `warmwasser_zeitprogramm_roh_2` | Zeitprogramm (Rohdaten 2) |
+| `zirkulation_zeitprogramm_roh_1` | Zeitprogramm (Rohdaten 1) |
+| `zirkulation_zeitprogramm_roh_2` | Zeitprogramm (Rohdaten 2) |

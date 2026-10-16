@@ -532,7 +532,7 @@ for n, B in HK_BASE.items():
     hidden(p + "partybetrieb", ("OFTEN", B + 0x303, 1, "onoff"), name="Komfortbetrieb (Status)", **H)
     hidden(p + "sparbetrieb", ("OFTEN", B + 0x302, 1, "onoff"), name="Sparbetrieb (Status)", **H)
 
-    # operating mode: select (writes via /set), plus the five binary views of the API integration
+    # operating mode: select (writes via /set)
     poll(
         "select",
         p + "betriebsart",
@@ -546,40 +546,6 @@ for n, B in HK_BASE.items():
         optimistic=False,
         **H,
     )
-    for code, key, label, icon in (
-        (0, "standby", "Betriebsart Aus", "mdi:power-standby"),
-        (1, "warmwasser", "Betriebsart Nur Warmwasser aktiv", "mdi:water-boiler"),
-        (2, "heizen_warmwasser", "Betriebsart Heizung & Warmwasser aktiv", "mdi:home-thermometer"),
-        (3, "dauernd_reduziert", "Betriebsart Dauernd reduziert", "mdi:hand-back-right-outline"),
-        (4, "dauernd_normal", "Betriebsart Dauernd Tagbetrieb", "mdi:hand-back-right-outline"),
-    ):
-        derived(
-            "binary_sensor",
-            f"{p}betriebsart_{key}",
-            p + "betriebsart",
-            "{{ 'ON' if value | int(-1) == " + str(code) + " else 'OFF' }}",
-            name=label,
-            icon=icon,
-            entity_category="diagnostic",
-            **H,
-        )
-    for key, label, icon in (
-        ("normal", "Heizphase Normal", "mdi:thermometer"),
-        ("reduziert", "Heizphase Reduziert", "mdi:thermometer-low"),
-        ("standby", "Heizphase Aus", "mdi:power-standby"),
-    ):
-        codes = {"normal": "['2', '3']", "reduziert": "['1']", "standby": "['0', '5']"}[key]
-        derived(
-            "binary_sensor",
-            f"{p}programm_{key}",
-            p + "programm",
-            "{{ 'ON' if value | string | trim in " + codes + " else 'OFF' }}",
-            name=label,
-            icon=icon,
-            entity_category="diagnostic",
-            **H,
-        )
-
     # set points and heating curve (writable numbers)
     for key, off, label in (
         ("normaltemperatur", 0x306, "Normaltemperatur"),
@@ -681,6 +647,36 @@ derived(
 )
 
 # --------------------------------------------------------------------------------------------------------------
+# presentation: device, name and category of entities in Home Assistant (one table, so that the clustering is easy to review).
+# Home Assistant sorts the entities of a device by category (controls, sensors, configuration, diagnostic) and then by name.
+# --------------------------------------------------------------------------------------------------------------
+PRESENTATION = {
+    # burner: own device, short names (the device name says "Brenner")
+    "brennermodulation": dict(device="brenner", name="Modulation"),
+    "brennerstarts": dict(device="brenner", name="Starts gesamt"),
+    "brennerlaufzeit": dict(device="brenner", name="Betriebsstunden"),
+    "brenner_aktiv": dict(device="brenner", name="Aktiv"),
+    # DHW
+    "warmwasser_speichertemperatur": dict(name="Speichertemperatur"),
+    "warmwasser_solltemperatur": dict(name="Solltemperatur"),
+    "warmwasser_ladepumpe": dict(name="Ladepumpe"),
+    "warmwasser_aufladung": dict(name="Aufladung"),
+}
+for _n in (1, 2):
+    for _dp, _meta_update in {
+        "normaltemperatur": dict(name="Solltemperatur Normal"),
+        "reduzierte_temperatur": dict(name="Solltemperatur Reduziert"),
+        "komforttemperatur": dict(name="Solltemperatur Komfort"),
+        "heizkurve_steigung": dict(name="Heizkurve Steigung", entity_category="config"),
+        "heizkurve_niveau": dict(name="Heizkurve Verschiebung", entity_category="config"),
+        "vorlaufsolltemperatur": dict(name="Vorlauf Soll (Regler)", entity_category="diagnostic"),
+        "pumpe": dict(name="Umwälzpumpe"),
+    }.items():
+        PRESENTATION[f"hk{_n}_{_dp}"] = _meta_update
+for _dp, _meta_update in PRESENTATION.items():
+    _meta[_dp].update(_meta_update)
+
+# --------------------------------------------------------------------------------------------------------------
 # the poll list
 # --------------------------------------------------------------------------------------------------------------
 # fmt: off
@@ -712,6 +708,12 @@ poll_list = {
             "identifiers": [MAIN + "_kessel"],
             "name": "Heizung Kessel",
             "model": "Kessel",
+            "manufacturer": "Viessmann",
+        },
+        "brenner": {
+            "identifiers": [MAIN + "_brenner"],
+            "name": "Heizung Brenner",
+            "model": "Brenner",
             "manufacturer": "Viessmann",
         },
         "warmwasser": {

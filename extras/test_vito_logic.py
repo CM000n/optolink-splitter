@@ -182,16 +182,27 @@ class HeizmodusTests(unittest.TestCase):
         until = datetime(2026, 10, 12, 21)
         self.assertEqual(v.heizmodus_text(0, 0, False, False, None), "Aus")
         self.assertEqual(v.heizmodus_text("1", "0", False, False, None), "Aus")
-        self.assertEqual(v.heizmodus_text(4, 3, False, False, until), "Normal + Zeitprogramm (pausiert)")
-        self.assertEqual(v.heizmodus_text(3, 1, False, False, until), "Reduziert + Zeitprogramm (pausiert)")
-        self.assertEqual(v.heizmodus_text(2, 2, False, False, until), "Zeitprogramm + Normal bis 21:00")
-        self.assertEqual(v.heizmodus_text(2, 1, False, False, until), "Zeitprogramm + Reduziert bis 21:00")
-        self.assertEqual(v.heizmodus_text(2, 1, False, False, None), "Zeitprogramm + Reduziert")
-        self.assertEqual(v.heizmodus_text(2, 2, True, False, until), "Komfortbetrieb + Zeitprogramm (pausiert)")
-        self.assertEqual(v.heizmodus_text(2, 1, False, True, until), "Sparbetrieb + Zeitprogramm (pausiert)")
+        self.assertEqual(v.heizmodus_text(4, 3, False, False, until), "Normal")
+        self.assertEqual(v.heizmodus_text(3, 1, False, False, until), "Reduziert")
+        self.assertEqual(v.heizmodus_text(2, 2, False, False, until), "Normal bis 21:00")
+        self.assertEqual(v.heizmodus_text(2, 1, False, False, until), "Reduziert bis 21:00")
+        self.assertEqual(v.heizmodus_text(2, 1, False, False, None), "Reduziert")
+        self.assertEqual(v.heizmodus_text(2, 2, True, False, until), "Komfortbetrieb")
+        self.assertEqual(v.heizmodus_text(4, 3, True, False, until), "Komfortbetrieb")
+        self.assertEqual(v.heizmodus_text(2, 1, False, True, until), "Sparbetrieb")
         self.assertEqual(v.heizmodus_text(1, 0, True, False, None), "Aus")         # off wins over comfort
         self.assertIsNone(v.heizmodus_text(None, 2, False, False, until))
         self.assertIsNone(v.heizmodus_text(2, 9, False, False, until))
+
+    def test_zeitprogramm_aktiv(self):
+        self.assertTrue(v.zeitprogramm_aktiv(2, False, False))
+        self.assertTrue(v.zeitprogramm_aktiv("2", False, False))
+        self.assertFalse(v.zeitprogramm_aktiv(2, True, False))      # comfort pauses it
+        self.assertFalse(v.zeitprogramm_aktiv(2, False, True))      # eco pauses it
+        self.assertFalse(v.zeitprogramm_aktiv(3, False, False))     # permanently reduced
+        self.assertFalse(v.zeitprogramm_aktiv(4, False, False))     # permanently normal
+        self.assertFalse(v.zeitprogramm_aktiv(0, False, False))     # off
+        self.assertIsNone(v.zeitprogramm_aktiv(None, False, False))
 
 
 if __name__ == "__main__":

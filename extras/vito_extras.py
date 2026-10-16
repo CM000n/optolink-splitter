@@ -80,11 +80,11 @@ SCHEDULES = {
 }
 HK_BASE = {"hk1": 0x3000, "hk2": 0x4000}
 RUNTIME = {  # key -> (topic of the on/off state, device key, entity name, max gap in seconds)
-    "brenner": ("brennermodulation", "kessel", "Brenner Laufzeit heute", 30),
+    "brenner": ("brennermodulation", "brenner", "Laufzeit heute", 30),
     "interne_kesselpumpe": ("interne_kesselpumpe", "kessel", "Interne Kesselpumpe Laufzeit heute", 120),
-    "hk1_pumpe": ("hk1_pumpe", "heizkreis_1", "Pumpe Laufzeit heute", 120),
-    "hk2_pumpe": ("hk2_pumpe", "heizkreis_2", "Pumpe Laufzeit heute", 120),
-    "warmwasser_ladepumpe": ("warmwasser_ladepumpe", "warmwasser", "Speicherladepumpe Laufzeit heute", 120),
+    "hk1_pumpe": ("hk1_pumpe", "heizkreis_1", "Umwälzpumpe Laufzeit heute", 120),
+    "hk2_pumpe": ("hk2_pumpe", "heizkreis_2", "Umwälzpumpe Laufzeit heute", 120),
+    "warmwasser_ladepumpe": ("warmwasser_ladepumpe", "warmwasser", "Ladepumpe Laufzeit heute", 120),
     "zirkulationspumpe": ("zirkulationspumpe", "zirkulation", "Pumpe Laufzeit heute", 120),
     "solarpumpe": ("solarpumpe", "solar", "Kreispumpe Laufzeit heute", 120),
 }
@@ -163,40 +163,44 @@ def entity_defs():
     temp = dict(unit_of_measurement="°C", device_class="temperature", state_class="measurement",
                 suggested_display_precision=1)
 
-    # boiler
-    add("binary_sensor", "brenner_taktung", "kessel", "Brenner Taktung", icon="mdi:sine-wave", device_class="problem",
+    # burner (own device below the installation, like the cloud grouped it, but separate from the boiler's temperatures)
+    diag = dict(entity_category="diagnostic")
+    add("binary_sensor", "brenner_taktung", "brenner", "Taktung", icon="mdi:sine-wave", device_class="problem",
         state_topic=f"{EXT}/brenner_taktung")
-    add("sensor", "brenner_starts_heute", "kessel", "Brenner Starts heute", icon="mdi:counter",
+    add("sensor", "brenner_starts_heute", "brenner", "Starts heute", icon="mdi:counter",
         state_class="total_increasing", state_topic=f"{EXT}/brenner_starts_heute")
-    add("sensor", "brenner_starts_letzte_stunde", "kessel", "Brenner Starts letzte Stunde", icon="mdi:counter",
-        state_class="measurement", state_topic=f"{EXT}/brenner_starts_letzte_stunde")
-    add("sensor", "brenner_letzte_laufzeit", "kessel", "Brenner letzte Laufzeit", icon="mdi:timer-play-outline",
-        suggested_display_precision=1, state_topic=f"{EXT}/brenner_letzte_laufzeit", **mins)
-    add("sensor", "brenner_letzte_pause", "kessel", "Brenner letzte Pause", icon="mdi:timer-pause-outline",
-        suggested_display_precision=1, state_topic=f"{EXT}/brenner_letzte_pause", **mins)
-    add("sensor", "brenner_laufzeit_pro_start", "kessel", "Brenner Ø Laufzeit pro Start", icon="mdi:timer-sand",
-        suggested_display_precision=1, state_topic=f"{EXT}/brenner_laufzeit_pro_start", **mins)
-    for prefix, label in (("brenner_automatik", "Brenner Automatik"), ("brenner_fehlerstatus", "Brenner Fehlerstatus")):
-        add("sensor", prefix, "kessel", label, icon="mdi:check-network-outline", state_topic=f"{EXT}/{prefix}")
-        add("sensor", prefix + "_fehlercode", "kessel", label + " Fehlercode", icon="mdi:alert-circle-outline",
-            entity_category="diagnostic", state_topic=f"{EXT}/{prefix}_fehlercode")
-        add("sensor", prefix + "_fehlerdetails", "kessel", label + " Fehlerdetails", icon="mdi:alert-circle-outline",
-            entity_category="diagnostic", state_topic=f"{EXT}/{prefix}_fehlerdetails")
+    add("sensor", "brenner_starts_letzte_stunde", "brenner", "Starts letzte Stunde", icon="mdi:counter",
+        state_class="measurement", state_topic=f"{EXT}/brenner_starts_letzte_stunde", **diag)
+    add("sensor", "brenner_letzte_laufzeit", "brenner", "Letzte Laufzeit", icon="mdi:timer-play-outline",
+        suggested_display_precision=1, state_topic=f"{EXT}/brenner_letzte_laufzeit", **mins, **diag)
+    add("sensor", "brenner_letzte_pause", "brenner", "Letzte Pause", icon="mdi:timer-pause-outline",
+        suggested_display_precision=1, state_topic=f"{EXT}/brenner_letzte_pause", **mins, **diag)
+    add("sensor", "brenner_laufzeit_pro_start", "brenner", "Ø Laufzeit pro Start", icon="mdi:timer-sand",
+        suggested_display_precision=1, state_topic=f"{EXT}/brenner_laufzeit_pro_start", **mins, **diag)
+    for prefix, label in (("brenner_automatik", "Automatik"), ("brenner_fehlerstatus", "Fehlerstatus")):
+        add("sensor", prefix, "brenner", label, icon="mdi:check-network-outline", state_topic=f"{EXT}/{prefix}", **diag)
+        add("sensor", prefix + "_fehlercode", "brenner", label + " Fehlercode", icon="mdi:alert-circle-outline",
+            state_topic=f"{EXT}/{prefix}_fehlercode", **diag)
+        add("sensor", prefix + "_fehlerdetails", "brenner", label + " Fehlerdetails", icon="mdi:alert-circle-outline",
+            state_topic=f"{EXT}/{prefix}_fehlerdetails", **diag)
     # run time today
     for key, (_, device, label, _) in RUNTIME.items():
         name = "brenner_laufzeit_heute" if key == "brenner" else f"{key}_laufzeit_heute"
-        add("sensor", name, device, label, icon="mdi:timer-outline", state_topic=f"{EXT}/{name}", **hours)
+        add("sensor", name, device, label, icon="mdi:timer-outline", state_topic=f"{EXT}/{name}", **hours,
+            **({} if key == "brenner" else diag))
     # heating circuits
     for n in (1, 2):
         hk = f"hk{n}"
         device = f"heizkreis_{n}"
-        add("sensor", f"{hk}_soll_vorlauftemperatur_heizkurve", device, "Soll-Vorlauftemperatur (Heizkurve)",
-            icon="mdi:chart-bell-curve-cumulative", state_topic=f"{EXT}/{hk}_soll_vorlauftemperatur_heizkurve", **temp)
-        add("sensor", f"{hk}_vorlauf_abweichung_zur_heizkurve", device, "Vorlauf Abweichung zur Heizkurve",
+        add("sensor", f"{hk}_soll_vorlauftemperatur_heizkurve", device, "Vorlauf Soll (Heizkurve)",
+            icon="mdi:chart-bell-curve-cumulative", state_topic=f"{EXT}/{hk}_soll_vorlauftemperatur_heizkurve", **temp, **diag)
+        add("sensor", f"{hk}_vorlauf_abweichung_zur_heizkurve", device, "Vorlauf Abweichung (Heizkurve)",
             icon="mdi:chart-bell-curve-cumulative", unit_of_measurement="K", state_class="measurement",
-            suggested_display_precision=1, state_topic=f"{EXT}/{hk}_vorlauf_abweichung_zur_heizkurve")
+            suggested_display_precision=1, state_topic=f"{EXT}/{hk}_vorlauf_abweichung_zur_heizkurve", **diag)
         add("sensor", f"{hk}_programm", device, "Aktiver Heizmodus", icon="mdi:format-list-bulleted-type",
             state_topic=f"{EXT}/{hk}_programm")
+        add("binary_sensor", f"{hk}_zeitprogramm_aktiv", device, "Zeitprogramm", icon="mdi:calendar-check",
+            state_topic=f"{EXT}/{hk}_zeitprogramm_aktiv")
         for name, label, icon in (("komfortbetrieb", "Komfortbetrieb", "mdi:sofa"), ("sparbetrieb", "Sparbetrieb", "mdi:leaf")):
             add("switch", f"{hk}_{name}", device, label, icon=icon, state_topic=f"{EXT}/{hk}_{name}",
                 command_topic=f"{EXT}/{hk}_{name}/set")
@@ -205,19 +209,23 @@ def entity_defs():
     # time programs + overrides
     for key, (_, device, label) in SCHEDULES.items():
         enum = ["normal", "reduced"] if key.startswith("hk") else ["on", "off"]
-        add("sensor", f"{key}_zeitprogramm", device, "Zeitprogramm", icon="mdi:calendar-clock", device_class="enum",
-            options=enum, state_topic=f"{EXT}/{key}_zeitprogramm", json_attributes_topic=f"{EXT}/{key}_zeitprogramm/attr")
+        add("sensor", f"{key}_zeitprogramm", device, "Zeitplan (aktuelle Phase)" if key.startswith("hk") else "Zeitplan (aktuell)",
+            icon="mdi:calendar-clock", device_class="enum", options=enum, state_topic=f"{EXT}/{key}_zeitprogramm",
+            json_attributes_topic=f"{EXT}/{key}_zeitprogramm/attr", **diag)
         if key.startswith("hk"):    # the heating circuits have the operating mode and comfort / eco like the ViCare app
             continue                # instead of the boost / permanent operation of the old custom integration (time program rewrite)
         pump = key == "zirkulation"
-        add("button", f"{key}_boost", device, "Pumpe Boost" if pump else "Boost", icon="mdi:rocket-launch",
+        what = "Zusatzlauf" if pump else "Zusatzaufheizung"
+        add("binary_sensor", f"{key}_zeitprogramm_aktiv", device, "Zeitprogramm", icon="mdi:calendar-check",
+            state_topic=f"{EXT}/{key}_zeitprogramm_aktiv")
+        add("button", f"{key}_boost", device, f"{what} starten", icon="mdi:rocket-launch",
             command_topic=f"{EXT}/{key}_boost/press", payload_press="PRESS")
-        add("number", f"{key}_boost_dauer", device, "Pumpe Boost-Dauer" if pump else "Boost-Dauer",
+        add("number", f"{key}_boost_dauer", device, f"Dauer {what}",
             icon="mdi:timer-cog-outline", entity_category="config", min=10, max=360, step=10, mode="box",
             unit_of_measurement="min", state_topic=f"{EXT}/{key}_boost_dauer", command_topic=f"{EXT}/{key}_boost_dauer/set")
-        add("switch", f"{key}_dauerbetrieb", device, "Pumpe Dauerbetrieb" if pump else "Dauerbetrieb",
+        add("switch", f"{key}_dauerbetrieb", device, "Dauerbetrieb (Zeitprogramm überbrückt)",
             icon="mdi:calendar-lock", state_topic=f"{EXT}/{key}_dauerbetrieb", command_topic=f"{EXT}/{key}_dauerbetrieb/set")
-        add("button", f"{key}_zeitprogramm_zuruecksetzen", device, "Zeitprogramm zurücksetzen",
+        add("button", f"{key}_zeitprogramm_zuruecksetzen", device, "Überbrückung beenden",
             icon="mdi:calendar-refresh", command_topic=f"{EXT}/{key}_zeitprogramm_zuruecksetzen/press", payload_press="PRESS")
     # solar, holiday
     add("sensor", "solar_temperaturdifferenz_kollektor_speicher", "solar", "Temperaturdifferenz Kollektor/Speicher",
@@ -596,6 +604,7 @@ class Extras:
 
     def after_override(self, key):
         self.pub(f"{EXT}/{key}_dauerbetrieb", "ON" if self.override_kind(key) == "permanent" else "OFF")
+        self.bridged_state(key)
         self.schedule_state(key, datetime.now())
         self.forcepoll()
 
@@ -888,16 +897,24 @@ class Extras:
                                                         self.values.get(f"{hk}_sparbetrieb") == "ON"))
 
     def heizmodus(self, hk):
-        """"Aktiver Heizmodus" like the ViCare app: operating mode, phase, comfort / eco and the end of the current phase."""
+        """"Aktiver Heizmodus" like the ViCare app (Aus, Normal, Reduziert, Komfortbetrieb, Sparbetrieb, or the phase of the
+        time program with its end) and whether the time program controls the circuit ("Zeitprogramm" on / off)."""
         mode, program = self.values.get(f"{hk}_betriebsart"), self.values.get(f"{hk}_programm")
+        party, eco = self.values.get(f"{hk}_partybetrieb") == "ON", self.values.get(f"{hk}_sparbetrieb") == "ON"
+        active = logic.zeitprogramm_aktiv(mode, party, eco)
+        if active is not None:
+            self.pub(f"{EXT}/{hk}_zeitprogramm_aktiv", "ON" if active else "OFF")
         if mode is None or program is None:
             return
         raw = self.raw_week(hk)
         until = logic.next_switch(logic.week_to_slots(raw), datetime.now()) if raw else None
-        text = logic.heizmodus_text(mode, program, self.values.get(f"{hk}_partybetrieb") == "ON",
-                                    self.values.get(f"{hk}_sparbetrieb") == "ON", until)
+        text = logic.heizmodus_text(mode, program, party, eco, until)
         if text:
             self.pub(f"{EXT}/{hk}_programm", text)
+
+    def bridged_state(self, key):
+        """DHW / circulation: the time program controls them unless a boost or permanent operation bridges it."""
+        self.pub(f"{EXT}/{key}_zeitprogramm_aktiv", "OFF" if self.override_kind(key) else "ON")
 
     def holiday(self, now):
         start = logic.parse_vdatetime(self.values.get("urlaubsprogramm_beginn", ""))
@@ -941,6 +958,8 @@ class Extras:
                     self.schedule_state(key, now)
                 for hk in ("hk1", "hk2"):
                     self.heizmodus(hk)
+                for key in ("warmwasser", "zirkulation"):
+                    self.bridged_state(key)
                 self.holiday(now)
                 self.check_overrides()
                 if time.time() - last_sync > SYNC_INTERVAL:

@@ -97,7 +97,8 @@ def next_switch(week_slots, now):
 
 
 def heizmodus_text(mode, phase, party, eco, until):
-    """Text of the ViCare app's "Aktiver Heizmodus" for a heating circuit.
+    """Text of the ViCare app's "Aktiver Heizmodus" for a heating circuit: Aus, Normal, Reduziert, Komfortbetrieb,
+    Sparbetrieb, or the phase of the time program with its end ("Normal bis 21:00").
     mode: operating mode register 0x?323 (0 off, 1 DHW only, 2 time program, 3 permanently reduced, 4 permanently normal),
     phase: byte 1 of the status block (0 off, 1 reduced, 2 normal, 3 permanently normal), until: end of the current phase."""
     try:
@@ -107,17 +108,26 @@ def heizmodus_text(mode, phase, party, eco, until):
     if mode in (0, 1):
         return "Aus"
     if party:
-        return "Komfortbetrieb + Zeitprogramm (pausiert)"
+        return "Komfortbetrieb"
     if eco:
-        return "Sparbetrieb + Zeitprogramm (pausiert)"
+        return "Sparbetrieb"
     if mode == 3:
-        return "Reduziert + Zeitprogramm (pausiert)"
+        return "Reduziert"
     if mode == 4:
-        return "Normal + Zeitprogramm (pausiert)"
+        return "Normal"
     name = {0: "Aus", 1: "Reduziert", 2: "Normal", 3: "Normal"}.get(phase)
     if name is None:
         return None
-    return f"Zeitprogramm + {name}" + (f" bis {until:%H:%M}" if until else "")
+    return name + (f" bis {until:%H:%M}" if until else "")
+
+
+def zeitprogramm_aktiv(mode, party, eco):
+    """True while the time program controls the heating circuit (operating mode 'Heizung & Warmwasser aktiv'), False when it is
+    switched off or paused by a permanent mode, comfort or eco; None if the mode is unknown."""
+    try:
+        return int(float(mode)) == 2 and not party and not eco
+    except (TypeError, ValueError):
+        return None
 
 
 def format_slots(day):
