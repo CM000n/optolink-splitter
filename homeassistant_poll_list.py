@@ -54,8 +54,8 @@ def derived(domain, dp, state_from=None, value_template=None, **meta):
 
 
 def hidden(dp, item, **meta):
-    """Polled raw datapoint that only other tools (vito_extras.py) consume: published, but disabled in HA."""
-    poll("sensor", dp, item, entity_category="diagnostic", enabled_by_default=False, **meta)
+    """Polled raw datapoint that only other tools (vito_extras.py) consume: published on MQTT, no HA entity."""
+    poll("sensor", dp, item, discovery=False, **meta)
 
 
 def set_topic(dp):
@@ -181,7 +181,7 @@ poll("sensor", "solar_gesamtertrag", ("SOMETIMES", 0x6560, 4, 1), name="Gesamter
      unit_of_measurement="kWh", device_class="energy", state_class="total_increasing",
      suggested_display_precision=0, **S)
 poll("sensor", "solarertrag_heute", ("SOMETIMES", 0xCF30, 4, 0.001), name="Ertrag heute",
-     icon="mdi:solar-power-variant", unit_of_measurement="kWh", device_class="energy", state_class="measurement",
+     icon="mdi:solar-power-variant", unit_of_measurement="kWh", device_class="energy", state_class="total_increasing",
      suggested_display_precision=1, **S)
 poll("sensor", "solarertrag_gestern", ("SOMETIMES", 0xCF30, 8, "b:4:7", 0.001), name="Ertrag gestern",
      icon="mdi:solar-power-variant", unit_of_measurement="kWh", device_class="energy", state_class="measurement",

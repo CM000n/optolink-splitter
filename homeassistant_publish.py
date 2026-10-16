@@ -239,6 +239,8 @@ def build_discovery_config(domain, item_config, mqtt_base, dp_prefix, device_con
     #   any other key (name, icon, entity_category, ...) replaces the generated default
     meta = ha_device.get("entity_meta", {}).get(dp_name, {})
     for key, value in meta.items():
+        if key == "discovery":
+            continue                                   # handled by the caller: False = poll and publish, but no HA entity
         if key == "device":
             discovery_config["device"] = resolve_device(value, device_config)
         elif isinstance(value, str):
@@ -321,6 +323,7 @@ def publish_ha_discovery():
     total_published = 0
     total_skipped = 0
     published_topics = set()
+    total_hidden = 0
     namedReference = re.compile(r'%([a-zA-Z0-9\-_ /]+):[^%]+%')
     
     for domain_config in expand_domain_units(ha_device.get("domains", [])):
@@ -341,6 +344,10 @@ def publish_ha_discovery():
 
         for item in all_items:
             skip_item = False
+            item_name = item[1] if isinstance(item, (tuple, list)) else item.get("name")
+            if ha_device.get("entity_meta", {}).get(item_name, {}).get("discovery") is False:
+                total_hidden += 1
+                continue                                # datapoint is polled and published, but gets no Home Assistant entity
             discovery_config, name_id, dpaddr_str = build_discovery_config(
                 domain=domain,
                 item_config=item,
@@ -405,6 +412,8 @@ def publish_ha_discovery():
                 total_skipped += 1
             
     print(f"\n✓ {total_published} entities published successfully!")
+    if total_hidden > 0:
+        print(f"  {total_hidden} datapoint(s) without Home Assistant entity (entity_meta 'discovery': False)")
     if total_skipped > 0:
         print(f"\n! {total_skipped} entities skipped (see ERRORs above)!")
 
