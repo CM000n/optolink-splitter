@@ -234,7 +234,51 @@ def build_discovery_config(domain, item_config, mqtt_base, dp_prefix, device_con
             normalized[key] = value
         merge_item_dict_set_if_missing(discovery_config, normalized)
 
+    # per-entity overrides from the optional 'entity_meta' table of the poll list:
+    #   "device": key into the optional 'devices' table (sub-device, linked to the main device via via_device)
+    #   any other key (name, icon, entity_category, ...) replaces the generated default
+    meta = ha_device.get("entity_meta", {}).get(dp_name, {})
+    for key, value in meta.items():
+        if key == "device":
+            discovery_config["device"] = resolve_device(value, device_config)
+        elif isinstance(value, str):
+            discovery_config[key] = value.replace("{mqtt_base}", mqtt_base)
+        else:
+            discovery_config[key] = value
+
     return discovery_config, name_id, dpaddr_str
+
+
+def resolve_device(device_key, main_device):
+    """Device config for a sub-device key from the poll list's 'devices' table; falls back to the main device."""
+    sub = ha_device.get("devices", {}).get(device_key)
+    if sub is None:
+        print(f" WARNING: unknown device '{device_key}' in entity_meta, using the main device.")
+        return main_device
+    sub = deepcopy(sub)
+    if "via_device" not in sub and main_device.get("identifiers"):
+        sub["via_device"] = main_device["identifiers"][0]
+    return sub
+
+
+def prune_stale_discovery(mqtt_client, ha_prefix, node_id, keep_topics, wait=3):
+    """Remove retained discovery configs of this node_id that are no longer part of the poll list."""
+    found = set()
+
+    def on_message(client, userdata, message):
+        if message.payload:
+            found.add(message.topic)
+
+    pattern = f"{ha_prefix}/+/{node_id}/+/config"
+    mqtt_client.on_message = on_message
+    mqtt_client.subscribe(pattern)
+    time.sleep(wait)
+    mqtt_client.unsubscribe(pattern)
+    stale = sorted(found - set(keep_topics))
+    for topic in stale:
+        mqtt_client.publish(topic, "", retain=True)
+        print(f"Pruned stale discovery config: {topic}")
+    print(f"\n✓ {len(stale)} stale discovery config(s) removed.")
 
 
 def publish_ha_discovery():
@@ -242,6 +286,8 @@ def publish_ha_discovery():
         description="make Optolink-Splitter datapoints available in Home Assistant by publishing them via MQTT"
     )
     parser.add_argument("-c", "--console", dest="console", action="store_true", help="Console Output only")
+    parser.add_argument("-p", "--prune", dest="prune", action="store_true",
+                        help="Remove retained discovery configs of this node_id that are no longer in the poll list")
     args = parser.parse_args()
     if args.console:
         print("Console Output only")
@@ -274,6 +320,7 @@ def publish_ha_discovery():
     
     total_published = 0
     total_skipped = 0
+    published_topics = set()
     namedReference = re.compile(r'%([a-zA-Z0-9\-_ /]+):[^%]+%')
     
     for domain_config in expand_domain_units(ha_device.get("domains", [])):
@@ -350,6 +397,7 @@ def publish_ha_discovery():
                     print(f"{'-'*80}\n{topic}\n{json.dumps(discovery_config, indent=2)}")
                 else:
                     mqtt_client.publish(topic, json.dumps(discovery_config), retain=True)
+                published_topics.add(topic)
                 print(f"Published {domain}: {discovery_config['name']} -> {discovery_config['unique_id']}")
                 total_published += 1
                 time.sleep(mqtt_delay)
@@ -359,6 +407,9 @@ def publish_ha_discovery():
     print(f"\n✓ {total_published} entities published successfully!")
     if total_skipped > 0:
         print(f"\n! {total_skipped} entities skipped (see ERRORs above)!")
+
+    if args.prune and not args.console:
+        prune_stale_discovery(mqtt_client, ha_prefix, node_id, published_topics)
 
     # Graceful shutdown
     if not args.console:
