@@ -1,0 +1,24 @@
+# Companion service extras/vito_extras.py (derived entities, climate set point / preset, boost / permanent operation).
+# It needs the splitter (MQTT) but never touches the serial port.
+#
+#   sudo cp systemd/optolink-extras.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now optolink-extras
+[Unit]
+Description=Optolink-Splitter Extras (derived entities and controls)
+After=network-online.target optolink-splitter.service
+Wants=network-online.target optolink-splitter.service
+
+[Service]
+Type=simple
+User=simon
+Group=simon
+WorkingDirectory=/home/simon/optolink-splitter
+Environment="PYTHONPATH=/home/simon/optolink-splitter"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/home/simon/optolink-splitter/myvenv/bin/python /home/simon/optolink-splitter/extras/vito_extras.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

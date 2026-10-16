@@ -1,0 +1,27 @@
+# Optolink-Splitter as a systemd service (starts at boot, restarts on failure).
+#
+# Install (adjust User and the paths first):
+#   sudo cp systemd/optolink-splitter.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now optolink-splitter
+#   journalctl -u optolink-splitter -f            # follow the log
+# Use 'sudo systemctl restart optolink-splitter' after changing settings_ini.py or the poll list.
+# Set show_opto_rx = False in settings_ini.py when running as a service, otherwise every telegram ends up in the journal.
+[Unit]
+Description=Optolink-Splitter Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=simon
+Group=simon
+WorkingDirectory=/home/simon/optolink-splitter
+Environment="PATH=/home/simon/optolink-splitter/myvenv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/home/simon/optolink-splitter/myvenv/bin/python /home/simon/optolink-splitter/optolinkvs2_switch.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

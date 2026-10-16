@@ -16,3 +16,5 @@ allupdate.sh
 old_test/
 *venv/
 *.code-workspace
+extras_state.json
+extras_state.json.*
