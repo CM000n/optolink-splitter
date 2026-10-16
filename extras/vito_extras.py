@@ -352,7 +352,7 @@ class Extras:
     @staticmethod
     def write_allowed(addr, length):
         for base in HK_BASE.values():
-            if length == 1 and addr in (base + 0x302, base + 0x306, base + 0x307, base + 0x308, base + 0x330):
+            if length == 1 and addr in (base + 0x306, base + 0x307, base + 0x308, base + 0x330, base + 0x331):
                 return True
         for base, _, _ in SCHEDULES.values():
             if length == 8 and base <= addr < base + 56 and (addr - base) % 8 == 0:
@@ -440,16 +440,17 @@ class Extras:
         if preset not in ("comfort", "eco", "home", "sleep", "none"):
             raise ValueError(f"unknown preset {preset}")
         base = HK_BASE[hk]
-        # Comfort is switched with the command register 0x330, exactly what the ViCare app writes (the party flag
-        # 0x303 is only its status and is cleared again by the controller when written). Both commands are always
-        # written (idempotent): the cached state may be up to a poll cycle old. Like the ViCare integration, the
-        # other program is switched off before the wanted one is switched on.
-        self.write(base + 0x302, 0)
+        # Comfort and eco are switched with the command registers 0x330 / 0x331, exactly what the ViCare app writes
+        # (the flags 0x303 / 0x302 are only their status; a direct write is cleared again by the controller). Both
+        # commands are always written (idempotent): the cached state may be up to a poll cycle old. Like the ViCare
+        # integration, the other program is switched off before the wanted one is switched on. Eco only holds in a
+        # normal phase of the time program, in a reduced phase the controller takes it back within seconds.
+        self.write(base + 0x331, 0)
         self.write(base + 0x330, 0)
         if preset == "comfort":
             self.write(base + 0x330, 1)
         elif preset == "eco":
-            self.write(base + 0x302, 1)
+            self.write(base + 0x331, 1)
         self.forcepoll()
 
     def end_holiday(self):

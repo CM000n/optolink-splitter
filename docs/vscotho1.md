@@ -72,8 +72,8 @@ M1 (`0x2000`) is unused here. Offsets relative to the base:
 | Offset | Content |
 |---|---|
 | `0x301` | selected operating program, not the phase: 1 = permanently reduced, 2 = permanently normal, 3 = time program (0 = DHW only, 5 = off); the active program is in the status block |
-| `0x302` / `0x303` | eco ("Spar") flag, writable / party = comfort **status**, set by the controller (a write is cleared again within seconds) |
-| `0x330` | comfort command: 1 = comfort on (comfort set point `0x308` applies), 0 = off. This is what the ViCare app writes, writable |
+| `0x302` / `0x303` | eco ("Spar") / party = comfort **status**, set by the controller (a direct write is cleared again within seconds) |
+| `0x330` / `0x331` | comfort / eco **command**: 1 = on, 0 = off (comfort uses the set point `0x308`). This is what the ViCare app writes, writable. Activating one cancels the other; eco only holds in a normal phase of the time program (the app shows its tile only then) |
 | `0x306` / `0x307` / `0x308` | normal / reduced / comfort room set point, 1 byte in deg C, writable |
 | `0x309` / `0x311` | holiday start / end, 8 byte BCD each (`1970-01-01` = unset), writable |
 | `0x323` | operating mode: 0 standby, 1 DHW only, 2 heating + DHW (time program), 3 permanently reduced, 4 permanently normal, writable (the app writes this for "Dauernd reduziert" / "Dauernd Tagbetrieb") |
@@ -137,9 +137,10 @@ the ViCare integration. Highlights:
   zurücksetzen" is pressed. On the first start a snapshot of all four time programs is stored in the same file. "Zeitprogramm
   zurücksetzen" ends an active override; it does not restore factory settings.
 * The climate set point writes the set point register of the active program (normal / reduced; comfort while the party flag is on).
-* The preset *comfort* writes the command register `0x?330` like the ViCare app. Verified in time program mode: set point 22 °C,
-  party flag on after the next poll, "home" switches it off again. A direct write of the party flag `0x?303` does not stick
-  (it is only the status). Not tested in "permanently normal" / "permanently reduced" mode.
+* The presets *comfort* / *eco* write the command registers `0x?330` / `0x?331` like the ViCare app. Comfort verified in time program
+  mode: set point 22 °C, party flag on after the next poll, "home" switches it off again. Eco was recorded from the app (it is taken
+  back within seconds in a reduced phase). A direct write of the status flags `0x?302` / `0x?303` does not stick. Not tested in
+  "permanently normal" / "permanently reduced" mode.
 * Everything the ViCare app writes can be recorded with `tools/mqtt_timeline.py` (Vitoconnect requests next to polled registers);
   this is how the registers above were found.
 
