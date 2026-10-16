@@ -413,17 +413,13 @@ class Extras:
         if preset not in ("comfort", "eco", "home", "sleep", "none"):
             raise ValueError(f"unknown preset {preset}")
         base = HK_BASE[hk]
-        party_on = self.values.get(f"{hk}_partybetrieb") == "ON"
-        eco_on = self.values.get(f"{hk}_sparbetrieb") == "ON"
-        want_party, want_eco = preset == "comfort", preset == "eco"
-        # like the ViCare integration: switch the other program off first, then the wanted one on
-        if eco_on and not want_eco:
-            self.write(base + 0x302, 0)
-        if party_on and not want_party:
-            self.write(base + 0x303, 0)
-        if want_party and not party_on:
+        # Both flags are always written (idempotent): the cached state may be up to a poll cycle old.
+        # Like the ViCare integration, the other program is switched off before the wanted one is switched on.
+        self.write(base + 0x302, 0)
+        self.write(base + 0x303, 0)
+        if preset == "comfort":
             self.write(base + 0x303, 1)
-        if want_eco and not eco_on:
+        elif preset == "eco":
             self.write(base + 0x302, 1)
         self.forcepoll()
 
@@ -529,6 +525,7 @@ class Extras:
 
     def after_override(self, key):
         self.pub(f"{EXT}/{key}_dauerbetrieb", "ON" if self.override_kind(key) == "permanent" else "OFF")
+        self.schedule_state(key, datetime.now())
         self.forcepoll()
 
     def check_overrides(self):
