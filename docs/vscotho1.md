@@ -185,7 +185,9 @@ How the sync works (about every 30 s, see `sync_one` and `sync_decision`):
 3. Compare candidate registers with the values of the cloud entities (the Home Assistant history is a good oracle); to find
    registers of a state (frost protection, sensor error, holiday), correlate with times where the cloud shows the state.
 4. `tools/mqtt_cmd.py "read;0x0800;2;0.1;true"` reads or writes through the running splitter without a TCP port.
-5. Add the datapoint to the poll list, `sudo systemctl restart optolink-splitter`, `homeassistant_publish.py --prune`.
+5. Add the datapoint to the poll list, format the file (`ruff format homeassistant_poll_list.py`, settings in `ruff.toml`: 120 columns,
+   one argument per line, the `POLL_GROUPS` table is excluded), `sudo systemctl restart optolink-splitter`,
+   `homeassistant_publish.py --prune`.
    Writes: test on a circuit that is currently inactive and restore the value immediately.
 
 ## Migrating from the ViCare cloud integration

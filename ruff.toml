@@ -1,0 +1,8 @@
+# Formatting of the fork's own configuration file (the upstream modules are deliberately left alone, so that
+# merging upstream changes stays easy):
+#
+#   ruff format homeassistant_poll_list.py
+#
+# Line length matches .flake8.
+line-length = 120
+include = ["homeassistant_poll_list.py"]
