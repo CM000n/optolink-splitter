@@ -112,17 +112,13 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `binary_sensor.vito_hk1_betriebsart_standby` | Betriebsart Aus | splitter |
 | `binary_sensor.vito_hk1_betriebsart_warmwasser` | Betriebsart Nur Warmwasser aktiv | splitter |
 | `binary_sensor.vito_hk1_frostschutz` | Frostschutz | splitter |
-| `binary_sensor.vito_hk1_partybetrieb` | Partybetrieb (Komfort) | splitter |
 | `binary_sensor.vito_hk1_programm_normal` | Heizphase Normal | splitter |
 | `binary_sensor.vito_hk1_programm_reduziert` | Heizphase Reduziert | splitter |
 | `binary_sensor.vito_hk1_programm_standby` | Heizphase Aus | splitter |
 | `binary_sensor.vito_hk1_pumpe` | Heizkreisumwälzpumpe | splitter |
-| `binary_sensor.vito_hk1_sparbetrieb` | Sparbetrieb (Eco) | splitter |
 | `binary_sensor.vito_hk1_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
-| `button.vito_hk1_boost` | Boost | extras |
 | `button.vito_hk1_zeitprogramm_zuruecksetzen` | Zeitprogramm zurücksetzen | extras |
 | `climate.vito_hk1_heizung` | (device name) | splitter |
-| `number.vito_hk1_boost_dauer` | Boost-Dauer | extras |
 | `number.vito_hk1_heizkurve_niveau` | Verschiebung der Heizkurve | splitter |
 | `number.vito_hk1_heizkurve_steigung` | Steigung der Heizkurve | splitter |
 | `number.vito_hk1_komforttemperatur` | Komforttemperatur | splitter |
@@ -130,6 +126,8 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `number.vito_hk1_reduzierte_temperatur` | Reduzierte Temperatur | splitter |
 | `select.vito_hk1_betriebsart` | Betriebsart | splitter |
 | `sensor.vito_hk1_programm` | Aktiver Heizmodus | extras |
+| `switch.vito_hk1_komfortbetrieb` | Komfortbetrieb | extras |
+| `switch.vito_hk1_sparbetrieb` | Sparbetrieb | extras |
 | `sensor.vito_hk1_pumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
 | `sensor.vito_hk1_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | splitter |
 | `sensor.vito_hk1_soll_vorlauftemperatur_heizkurve` | Soll-Vorlauftemperatur (Heizkurve) | extras |
@@ -150,17 +148,13 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `binary_sensor.vito_hk2_betriebsart_standby` | Betriebsart Aus | splitter |
 | `binary_sensor.vito_hk2_betriebsart_warmwasser` | Betriebsart Nur Warmwasser aktiv | splitter |
 | `binary_sensor.vito_hk2_frostschutz` | Frostschutz | splitter |
-| `binary_sensor.vito_hk2_partybetrieb` | Partybetrieb (Komfort) | splitter |
 | `binary_sensor.vito_hk2_programm_normal` | Heizphase Normal | splitter |
 | `binary_sensor.vito_hk2_programm_reduziert` | Heizphase Reduziert | splitter |
 | `binary_sensor.vito_hk2_programm_standby` | Heizphase Aus | splitter |
 | `binary_sensor.vito_hk2_pumpe` | Heizkreisumwälzpumpe | splitter |
-| `binary_sensor.vito_hk2_sparbetrieb` | Sparbetrieb (Eco) | splitter |
 | `binary_sensor.vito_hk2_vorlauftemperatur_sensorfehler` | Vorlauftemperatur Sensorfehler | splitter |
-| `button.vito_hk2_boost` | Boost | extras |
 | `button.vito_hk2_zeitprogramm_zuruecksetzen` | Zeitprogramm zurücksetzen | extras |
 | `climate.vito_hk2_heizung` | (device name) | splitter |
-| `number.vito_hk2_boost_dauer` | Boost-Dauer | extras |
 | `number.vito_hk2_heizkurve_niveau` | Verschiebung der Heizkurve | splitter |
 | `number.vito_hk2_heizkurve_steigung` | Steigung der Heizkurve | splitter |
 | `number.vito_hk2_komforttemperatur` | Komforttemperatur | splitter |
@@ -168,6 +162,8 @@ Generated from `homeassistant_poll_list.py` (source *splitter*) and `extras/vito
 | `number.vito_hk2_reduzierte_temperatur` | Reduzierte Temperatur | splitter |
 | `select.vito_hk2_betriebsart` | Betriebsart | splitter |
 | `sensor.vito_hk2_programm` | Aktiver Heizmodus | extras |
+| `switch.vito_hk2_komfortbetrieb` | Komfortbetrieb | extras |
+| `switch.vito_hk2_sparbetrieb` | Sparbetrieb | extras |
 | `sensor.vito_hk2_pumpe_laufzeit_heute` | Pumpe Laufzeit heute | extras |
 | `sensor.vito_hk2_raumsolltemperatur_aktuell` | Raum-Solltemperatur aktuell | splitter |
 | `sensor.vito_hk2_soll_vorlauftemperatur_heizkurve` | Soll-Vorlauftemperatur (Heizkurve) | extras |

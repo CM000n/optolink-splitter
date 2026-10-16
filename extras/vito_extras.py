@@ -69,6 +69,8 @@ SCHEDULE_HELPERS = {                                         # time program -> (
 }
 
 # time programs: key -> (base address, device key, label)
+OBSOLETE_DISCOVERY = (("button", "hk1_boost"), ("button", "hk2_boost"), ("number", "hk1_boost_dauer"), ("number", "hk2_boost_dauer"))
+FLAG_READBACK_DELAY = 2.0                                    # seconds until the controller has set its status flag
 SCHEDULES = {
     "hk1": (0x3000, "heizkreis_1", "Heizkreis 1"),
     "hk2": (0x4000, "heizkreis_2", "Heizkreis 2"),
@@ -194,6 +196,9 @@ def entity_defs():
             suggested_display_precision=1, state_topic=f"{EXT}/{hk}_vorlauf_abweichung_zur_heizkurve")
         add("sensor", f"{hk}_programm", device, "Aktiver Heizmodus", icon="mdi:format-list-bulleted-type",
             state_topic=f"{EXT}/{hk}_programm")
+        for name, label, icon in (("komfortbetrieb", "Komfortbetrieb", "mdi:sofa"), ("sparbetrieb", "Sparbetrieb", "mdi:leaf")):
+            add("switch", f"{hk}_{name}", device, label, icon=icon, state_topic=f"{EXT}/{hk}_{name}",
+                command_topic=f"{EXT}/{hk}_{name}/set")
         add("text", f"{hk}_name", device, "Name", icon="mdi:rename-outline", entity_category="config",
             state_topic=f"{EXT}/{hk}_name", command_topic=f"{EXT}/{hk}_name/set", max=40)
     # time programs + overrides
@@ -202,11 +207,12 @@ def entity_defs():
         add("sensor", f"{key}_zeitprogramm", device, "Zeitprogramm", icon="mdi:calendar-clock", device_class="enum",
             options=enum, state_topic=f"{EXT}/{key}_zeitprogramm", json_attributes_topic=f"{EXT}/{key}_zeitprogramm/attr")
         pump = key == "zirkulation"
-        add("button", f"{key}_boost", device, "Pumpe Boost" if pump else "Boost", icon="mdi:rocket-launch",
-            command_topic=f"{EXT}/{key}_boost/press", payload_press="PRESS")
-        add("number", f"{key}_boost_dauer", device, "Pumpe Boost-Dauer" if pump else "Boost-Dauer",
-            icon="mdi:timer-cog-outline", entity_category="config", min=10, max=360, step=10, mode="box",
-            unit_of_measurement="min", state_topic=f"{EXT}/{key}_boost_dauer", command_topic=f"{EXT}/{key}_boost_dauer/set")
+        if not key.startswith("hk"):        # the heating circuits have comfort / eco like the ViCare app instead of a boost
+            add("button", f"{key}_boost", device, "Pumpe Boost" if pump else "Boost", icon="mdi:rocket-launch",
+                command_topic=f"{EXT}/{key}_boost/press", payload_press="PRESS")
+            add("number", f"{key}_boost_dauer", device, "Pumpe Boost-Dauer" if pump else "Boost-Dauer",
+                icon="mdi:timer-cog-outline", entity_category="config", min=10, max=360, step=10, mode="box",
+                unit_of_measurement="min", state_topic=f"{EXT}/{key}_boost_dauer", command_topic=f"{EXT}/{key}_boost_dauer/set")
         add("switch", f"{key}_dauerbetrieb", device, "Pumpe Dauerbetrieb" if pump else "Dauerbetrieb",
             icon="mdi:calendar-lock", state_topic=f"{EXT}/{key}_dauerbetrieb", command_topic=f"{EXT}/{key}_dauerbetrieb/set")
         add("button", f"{key}_zeitprogramm_zuruecksetzen", device, "Zeitprogramm zurücksetzen",
@@ -295,6 +301,8 @@ class Extras:
             cfg.update(unique_id=f"{PREFIX}{name}", default_entity_id=f"{domain}.{PREFIX}{name}",
                        availability=avail, availability_mode="all")
             self.client.publish(f"{HA_PREFIX}/{domain}/{NODE}/{name}/config", json.dumps(cfg), retain=True)
+        for domain, name in OBSOLETE_DISCOVERY:                      # entities that were replaced, drop their retained config
+            self.client.publish(f"{HA_PREFIX}/{domain}/{NODE}/{name}/config", "", retain=True)
         log.info("discovery published (%d entities)", len(entity_defs()))
 
     def publish_static(self):
@@ -408,6 +416,8 @@ class Extras:
             return self.set_temperature(name[:3], payload)
         if name in ("hk1_preset", "hk2_preset"):
             return self.set_preset(name[:3], payload)
+        if name in ("hk1_komfortbetrieb", "hk2_komfortbetrieb", "hk1_sparbetrieb", "hk2_sparbetrieb"):
+            return self.set_program_switch(name[:3], name[4:], payload.upper() == "ON")
         if name.endswith("_name") and name[:3] in ("hk1", "hk2"):
             with self.state.lock:
                 self.state.data["names"][name[:3]] = payload[:40]
@@ -454,6 +464,24 @@ class Extras:
         elif preset == "eco":
             self.write(base + 0x331, 1)
         self.forcepoll()
+
+    def program_switches(self, hk):
+        """State of the switches Komfortbetrieb / Sparbetrieb from the status flags the controller sets (0x?303 / 0x?302)."""
+        for name, flag in (("komfortbetrieb", "partybetrieb"), ("sparbetrieb", "sparbetrieb")):
+            if f"{hk}_{flag}" in self.values:
+                self.pub(f"{EXT}/{hk}_{name}", "ON" if self.values.get(f"{hk}_{flag}") == "ON" else "OFF")
+
+    def set_program_switch(self, hk, name, on):
+        """Comfort / eco on or off with the command registers 0x?330 / 0x?331, like the ViCare app. Activating one cancels the other."""
+        base = HK_BASE[hk]
+        mine, other = (base + 0x330, base + 0x331) if name == "komfortbetrieb" else (base + 0x331, base + 0x330)
+        if on:
+            self.write(other, 0)
+        self.write(mine, 1 if on else 0)
+        self.forcepoll()
+        time.sleep(FLAG_READBACK_DELAY)                          # show the result without waiting for the next poll
+        for flag, switch in ((0x303, "komfortbetrieb"), (0x302, "sparbetrieb")):
+            self.pub(f"{EXT}/{hk}_{switch}", "ON" if self.read_hex(base + flag, 1)[0] else "OFF")
 
     def end_holiday(self):
         for addr in HOLIDAY_REGISTERS[1:]:          # M2 and M3 (M1 is unused)
@@ -726,6 +754,7 @@ class Extras:
                 self.curve(hk)
                 self.preset(hk)
                 self.heizmodus(hk)
+                self.program_switches(hk)
         if name in ("solar_kollektortemperatur", "solar_speichertemperatur"):
             k, s = self.num("solar_kollektortemperatur"), self.num("solar_speichertemperatur")
             if k is not None and s is not None:

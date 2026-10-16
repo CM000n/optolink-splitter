@@ -45,6 +45,8 @@ class FakeExtras(ex.Extras):
         super().__init__()
         self.weeks = {key: bytearray(DAY_HK1 * 7) for key in ex.SCHEDULES}
         self.writes = []
+        self.regs = {}                                  # single byte registers written by commands
+        self.reg_writes = []
         self.poll()
 
     def poll(self):
@@ -61,10 +63,52 @@ class FakeExtras(ex.Extras):
                 self.weeks[key][addr - base:addr - base + len(data)] = data
                 self.writes.append((key, (addr - base) // 8, bytes(data)))
                 return
-        raise AssertionError(f"unexpected write to {addr:#x}")
+        self.reg_writes.append((addr, data))
+        self.regs[addr] = data
+
+    def read_hex(self, addr, length):
+        return bytes([self.regs.get(addr, 0)]) * length
 
     def forcepoll(self):
         pass
+
+
+class ProgramSwitchTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        ex.STATE_FILE = os.path.join(self.tmp.name, "state.json")
+        ex.FLAG_READBACK_DELAY = 0
+        self.x = FakeExtras()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_comfort_on_cancels_eco_and_switches_comfort_on(self):
+        self.x.regs[0x4303] = 1                                     # the controller sets its status flag
+        self.x.handle_command("hk2_komfortbetrieb/set", "ON")
+        self.assertEqual(self.x.reg_writes, [(0x4331, 0), (0x4330, 1)])
+        self.assertEqual(self.x.published["VitoExt/hk2_komfortbetrieb"], "ON")
+        self.assertEqual(self.x.published["VitoExt/hk2_sparbetrieb"], "OFF")
+
+    def test_eco_on_and_off(self):
+        self.x.handle_command("hk1_sparbetrieb/set", "ON")
+        self.assertEqual(self.x.reg_writes, [(0x3330, 0), (0x3331, 1)])
+        self.x.reg_writes.clear()
+        self.x.handle_command("hk1_sparbetrieb/set", "OFF")
+        self.assertEqual(self.x.reg_writes, [(0x3331, 0)])
+
+    def test_state_follows_the_polled_flags(self):
+        self.x.values.update({"hk2_partybetrieb": "ON", "hk2_sparbetrieb": "OFF"})
+        self.x.program_switches("hk2")
+        self.assertEqual((self.x.published["VitoExt/hk2_komfortbetrieb"], self.x.published["VitoExt/hk2_sparbetrieb"]), ("ON", "OFF"))
+
+    def test_preset_comfort_uses_the_command_register(self):
+        self.x.set_preset("hk2", "comfort")
+        self.assertEqual(self.x.reg_writes, [(0x4331, 0), (0x4330, 0), (0x4330, 1)])
+
+    def test_writes_are_limited_to_the_whitelist(self):
+        self.assertTrue(all(ex.Extras.write_allowed(a, 1) for a in (0x4330, 0x4331, 0x3330, 0x3331)))
+        self.assertFalse(ex.Extras.write_allowed(0x4303, 1))          # the status flag is not a command
 
 
 class SyncTests(unittest.TestCase):

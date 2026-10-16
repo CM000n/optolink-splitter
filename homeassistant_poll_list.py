@@ -527,22 +527,10 @@ for n, B in HK_BASE.items():
         entity_category="diagnostic",
         **H,
     )
-    poll(
-        "binary_sensor",
-        p + "partybetrieb",
-        ("OFTEN", B + 0x303, 1, "onoff"),
-        name="Partybetrieb (Komfort)",
-        icon="mdi:party-popper",
-        **H,
-    )
-    poll(
-        "binary_sensor",
-        p + "sparbetrieb",
-        ("OFTEN", B + 0x302, 1, "onoff"),
-        name="Sparbetrieb (Eco)",
-        icon="mdi:leaf",
-        **H,
-    )
+    # comfort / eco status flags (set by the controller); the switches "Komfortbetrieb" / "Sparbetrieb" of
+    # extras/vito_extras.py show them and write the command registers 0x330 / 0x331
+    hidden(p + "partybetrieb", ("OFTEN", B + 0x303, 1, "onoff"), name="Komfortbetrieb (Status)", **H)
+    hidden(p + "sparbetrieb", ("OFTEN", B + 0x302, 1, "onoff"), name="Sparbetrieb (Status)", **H)
 
     # operating mode: select (writes via /set), plus the five binary views of the API integration
     poll(
