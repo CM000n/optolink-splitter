@@ -158,8 +158,9 @@ Setup (the sync stays inactive without these two files, nothing else changes):
 How the sync works (about every 30 s, see `sync_one` and `sync_decision`):
 
 * The last synchronised state is stored in `extras_state.json`. A change on only one side is copied to the other:
-  helper edited -> the changed days are written to the controller and read back; controller or Vitoconnect/app changed ->
-  the helper is updated.
+  helper edited -> the changed days are written to the controller and read back (took 15 s in the live test); controller or
+  Vitoconnect/app changed -> the helper is updated as soon as the time program is polled again (`SOMETIMES` group = 5 min,
+  100 s in the live test; move the four `*_zeitprogramm_roh_*` items to `OFTEN` for 30 s).
 * Changed on both sides at the same time: **the controller wins**, the helper is reset and a persistent notification is created.
 * The controller works on a 10 minute raster with at most 4 periods per day. Start times are rounded down, end times up, and the
   helper is rewritten with the snapped values. More than 4 periods per day are rejected (helper reset, notification).
