@@ -18,3 +18,5 @@ old_test/
 *.code-workspace
 extras_state.json
 extras_state.json.*
+extras_config.json
+ha_token

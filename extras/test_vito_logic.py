@@ -88,6 +88,49 @@ class Faults(unittest.TestCase):
         self.assertIsNone(v.decode_fault(bytes.fromhex("c22025133207071038")))     # month 13 / day 32
 
 
+class HelperSync(unittest.TestCase):
+    CIRC = {"monday": [{"from": "05:00:00", "to": "09:00:00"}, {"from": "12:00:00", "to": "13:00:00"}, {"from": "18:00:00", "to": "21:00:00"}],
+            "sunday": [{"from": "00:00:00", "to": "24:00:00"}]}
+
+    def test_helper_roundtrip(self):
+        slots = v.helper_to_slots(self.CIRC)
+        self.assertEqual(slots[0], [(300, 540), (720, 780), (1080, 1260)])
+        self.assertEqual(slots[6], [(0, 1440)])
+        self.assertEqual(slots[1], [])
+        back = v.slots_to_helper(slots)
+        self.assertEqual(back["monday"], self.CIRC["monday"])
+        self.assertEqual(back["sunday"], [{"from": "00:00:00", "to": "24:00:00"}])
+        self.assertEqual(back["tuesday"], [])
+
+    def test_snapping_and_merge(self):
+        cfg = {"monday": [{"from": "05:03:00", "to": "06:01:00"}, {"from": "06:05:00", "to": "07:00:00"}]}
+        self.assertEqual(v.helper_to_slots(cfg)[0], [(300, 420)])           # 05:00-06:10 and 06:00-07:00 touch -> merged
+
+    def test_week_conversion(self):
+        week = bytes.fromhex("ffff30a8ffffffff" * 7)
+        slots = v.week_to_slots(week)
+        self.assertEqual(slots[2], [(360, 1260)])
+        self.assertEqual(v.week_to_slots(v.slots_to_week(slots)), slots)
+        self.assertEqual(len(v.slots_to_week(slots)), 56)
+
+    def test_too_many_periods(self):
+        day = [(60, 120), (180, 240), (300, 360), (420, 480), (540, 600)]
+        with self.assertRaises(ValueError):
+            v.slots_to_week([day] + [[]] * 6)
+
+    def test_short_device_week(self):
+        self.assertEqual(len(v.week_to_slots(bytes.fromhex("20b8ffffffffffff") * 6 + bytes(7))), 7)
+
+    def test_decision(self):
+        a, b, c = [[(60, 120)]] * 7, [[(60, 180)]] * 7, [[(0, 60)]] * 7
+        self.assertEqual(v.sync_decision(a, a, a), "none")
+        self.assertEqual(v.sync_decision(a, b, a), "to_device")
+        self.assertEqual(v.sync_decision(a, a, b), "to_helper")
+        self.assertEqual(v.sync_decision(a, b, c), "conflict")
+        self.assertEqual(v.sync_decision(a, b, b), "none")
+        self.assertEqual(v.sync_decision(None, b, a), "to_helper")
+
+
 class Misc(unittest.TestCase):
     def test_vdatetime(self):
         self.assertEqual(v.parse_vdatetime("Fr 16.10.2026 09:52:11"), datetime(2026, 10, 16, 9, 52, 11))

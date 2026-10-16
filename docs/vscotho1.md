@@ -115,7 +115,9 @@ the ViCare integration. Highlights:
 * More than the API: exhaust gas temperature, the controller's flow set point, the three outside temperature values,
   eco / party flags, the sensor status incl. "not connected" vs "error", the controller clock and its drift, the
   fault history with timestamps, 5 s burner data, the set point of the active program.
-* Not reproduced: cloud-only items (API call counter, schedule helper sync of the cloud) and a few static "active" flags of the API.
+* Time programs as `schedule` helpers, kept in sync with the controller in both directions (optional, see
+  [Schedule helpers](#schedule-helpers-time-programs-in-home-assistant)).
+* Not reproduced: cloud-only items (API call counter) and a few static "active" flags of the API.
 
 ## Controls and safety
 
@@ -130,6 +132,43 @@ the ViCare integration. Highlights:
   zurücksetzen" ends an active override; it does not restore factory settings.
 * The climate set point writes the register of the active program (normal / reduced / comfort). In "forced normal" mode the controller
   clears the party flag again, so the preset *comfort* has no lasting effect on such a circuit.
+
+## Schedule helpers (time programs in Home Assistant)
+
+The ViCare integration offered one Home Assistant `schedule` helper per time program. `extras/vito_extras.py` brings this back
+for the four time programs (it uses Home Assistant's WebSocket API, because schedule helpers cannot be created through MQTT):
+
+| Time program | Helper (entity id is derived from the name) |
+|---|---|
+| Heating circuit 1 | `Vito Heizkreis 1 (Fußbodenheizung) Zeitprogramm` -> `schedule.vito_heizkreis_1_fussbodenheizung_zeitprogramm` |
+| Heating circuit 2 | `Vito Heizkreis 2 (Heizkörper) Zeitprogramm` |
+| DHW | `Vito Warmwasser Zeitprogramm` |
+| DHW circulation | `Vito Zirkulation Zeitprogramm` |
+
+Setup (the sync stays inactive without these two files, nothing else changes):
+
+1. In Home Assistant create a **long-lived access token** (profile -> Security), ideally for a dedicated user, and store it on the Pi:
+   ```bash
+   read -rs -p "token: " T && printf '%s' "$T" > ha_token && unset T && chmod 600 ha_token
+   ```
+2. `cp extras/extras_config.json.example extras_config.json` and set `ha_url` (plain `http://host:8123`; `https` is not supported).
+   Both files are git-ignored and must stay on the Pi.
+3. `sudo systemctl restart optolink-extras`. The missing helpers are created from the controller's current time programs.
+
+How the sync works (about every 30 s, see `sync_one` and `sync_decision`):
+
+* The last synchronised state is stored in `extras_state.json`. A change on only one side is copied to the other:
+  helper edited -> the changed days are written to the controller and read back; controller or Vitoconnect/app changed ->
+  the helper is updated.
+* Changed on both sides at the same time: **the controller wins**, the helper is reset and a persistent notification is created.
+* The controller works on a 10 minute raster with at most 4 periods per day. Start times are rounded down, end times up, and the
+  helper is rewritten with the snapped values. More than 4 periods per day are rejected (helper reset, notification).
+  `24:00:00` is accepted as end of the day.
+* Boost and permanent operation rewrite the controller's program. The sync sees through them: the helper always shows the
+  program as you configured it, and a helper edit during an active boost changes the stored original that is restored when the boost ends.
+* Home Assistant not reachable: the sync retries every cycle and logs a warning at most every 10 minutes; nothing is written.
+* The token can read and change everything in Home Assistant. Keep `ha_token` at mode `0600`, use a dedicated user, and revoke
+  the token if the Pi is ever given away.
 
 ## Adapting to another installation
 
@@ -165,3 +204,11 @@ the old entities can be copied to the new entity ids:
 | a datapoint reads the first 55 bytes only | controller limit, split the read |
 | entity on the wrong device after a change | Home Assistant keeps the device of existing entities: remove the entity from the registry, republish the discovery |
 | time program stuck after a crash | restore it from `extras_state.json` (`overrides` / `backup`) with `tools/mqtt_cmd.py "writeraw;0x...;..."` |
+| schedule helper does not appear / does not follow the controller | `journalctl -u optolink-extras` (sync messages), check `extras_config.json`, the token file and that `ha_url` is reachable from the Pi |
+
+## Tests
+
+```bash
+PYTHONPATH=extras python -m unittest extras/test_vito_logic.py extras/test_ha_client.py     # pure logic, WebSocket client
+PYTHONPATH=.:extras python -m unittest extras/test_vito_sync.py                             # sync against a simulated HA and controller (needs paho-mqtt)
+```

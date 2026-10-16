@@ -148,3 +148,62 @@ def decode_fault(entry):
     except ValueError:
         return None
     return entry[0], when
+
+
+# --------------------------------------------------------------------------------------------------------------
+# Home Assistant schedule helper <-> controller time program
+# --------------------------------------------------------------------------------------------------------------
+WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+
+
+def _hms_to_minutes(text):
+    h, m, *_ = [int(x) for x in str(text).split(":")]
+    return h * 60 + m
+
+
+def helper_to_slots(config):
+    """HA schedule helper config -> 7 lists (Monday first) of (start_min, end_min), snapped to the controller's 10 minute
+    raster (start rounded down, end rounded up) and merged. 24:00:00 is accepted as end of the day."""
+    week = []
+    for day in WEEKDAYS:
+        slots = []
+        for rng in config.get(day) or []:
+            start = (_hms_to_minutes(rng["from"]) // 10) * 10
+            end = min(-(-_hms_to_minutes(rng["to"]) // 10) * 10, MINUTES_PER_DAY)
+            if end > start:
+                slots.append((start, end))
+        week.append(merge_slots(slots))
+    return week
+
+
+def slots_to_helper(week_slots):
+    """7 lists of (start_min, end_min) -> the weekday part of an HA schedule helper config."""
+    def hms(minutes):
+        return "24:00:00" if minutes >= MINUTES_PER_DAY else f"{minutes // 60:02d}:{minutes % 60:02d}:00"
+    return {day: [{"from": hms(a), "to": hms(b)} for a, b in slots] for day, slots in zip(WEEKDAYS, week_slots)}
+
+
+def week_to_slots(week):
+    """56 bytes (Monday first) -> 7 normalised slot lists."""
+    week = bytes(week) + bytes([UNUSED] * max(0, 56 - len(week)))
+    return [merge_slots(decode_day(week[d * 8:d * 8 + 8])) for d in range(7)]
+
+
+def slots_to_week(week_slots):
+    """7 slot lists -> 56 bytes; ValueError when a day has more than 4 periods."""
+    return b"".join(encode_day(day) for day in week_slots)
+
+
+def sync_decision(baseline, helper, device):
+    """Three way decision between the last synchronised state, the HA helper and the controller (all slot lists).
+    Returns 'none', 'to_device', 'to_helper' or 'conflict' (the controller wins in a conflict)."""
+    if helper == device:
+        return "none"
+    if baseline is None:
+        return "to_helper"
+    helper_changed, device_changed = helper != baseline, device != baseline
+    if helper_changed and not device_changed:
+        return "to_device"
+    if device_changed and not helper_changed:
+        return "to_helper"
+    return "conflict"

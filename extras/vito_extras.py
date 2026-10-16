@@ -15,6 +15,8 @@
    * climate set point and preset commands (writes the register of the active program, party / eco flags)
    * boost and permanent operation of the four time programs (rewrites the time program, original is saved and
      restored; this is how the ViCare integration did it through the cloud)
+   * optional two-way sync of the four time programs with Home Assistant schedule helpers (needs extras_config.json
+     and a long-lived access token, see docs/vscotho1.md)
 
    Safety: writes are restricted to a whitelist of registers (set points, party / eco flags, time program days,
    holiday dates), the original time programs are stored in the state file before anything is changed and
@@ -42,6 +44,7 @@ for path in (ROOT, HERE):
 import paho.mqtt.client as paho  # noqa: E402
 
 import vito_logic as logic  # noqa: E402
+from ha_client import HaClient, HaError  # noqa: E402
 from c_settings_adapter import settings  # noqa: E402
 import homeassistant_poll_list as plist  # noqa: E402
 
@@ -56,6 +59,14 @@ HA_PREFIX = POLL.get("discovery_prefix") or "homeassistant"
 DEVICES = POLL["devices"]
 MAIN_ID = POLL["device"]["identifiers"][0]
 STATE_FILE = os.path.join(ROOT, "extras_state.json")
+CONFIG_FILE = os.path.join(ROOT, "extras_config.json")       # optional, enables the schedule sync (see docs/vscotho1.md)
+SYNC_INTERVAL = 20                                           # min. seconds between two schedule sync cycles (the ticker runs every 15 s, so ~30 s)
+SCHEDULE_HELPERS = {                                         # time program -> (name of the HA schedule helper, icon)
+    "hk1": ("Vito Heizkreis 1 (Fußbodenheizung) Zeitprogramm", "mdi:radiator"),
+    "hk2": ("Vito Heizkreis 2 (Heizkörper) Zeitprogramm", "mdi:radiator"),
+    "warmwasser": ("Vito Warmwasser Zeitprogramm", "mdi:water-boiler"),
+    "zirkulation": ("Vito Zirkulation Zeitprogramm", "mdi:water-sync"),
+}
 
 # time programs: key -> (base address, device key, label)
 SCHEDULES = {
@@ -98,7 +109,7 @@ class State:
         self.lock = threading.RLock()
         self.dirty = False
         self.data = {"v": 1, "boost_dauer": {}, "names": {"hk1": "Fußbodenheizung", "hk2": "Heizkörper"},
-                     "overrides": {}, "burner": {}, "starts": {"events": []}, "runtime": {}, "backup": {}}
+                     "overrides": {}, "burner": {}, "starts": {"events": []}, "runtime": {}, "backup": {}, "sync": {}}
         try:
             with open(path) as f:
                 self.data.update(json.load(f))
@@ -214,6 +225,15 @@ def entity_defs():
 # --------------------------------------------------------------------------------------------------------------
 # the service
 # --------------------------------------------------------------------------------------------------------------
+def _locked(fn):
+    """Serialise everything that reads or rewrites time programs (boost, permanent operation, restore, schedule sync)."""
+    def wrapper(self, *args, **kwargs):
+        with self.sched_lock:
+            return fn(self, *args, **kwargs)
+    wrapper.__name__ = fn.__name__
+    return wrapper
+
+
 class Extras:
     def __init__(self):
         self.state = State(STATE_FILE)
@@ -229,6 +249,9 @@ class Extras:
         self.expect = None
         self.last_flush = time.time()
         self.fault_code = None
+        self.sched_lock = threading.RLock()
+        self.sync_hold = {}                 # key -> timestamp until which the sync skips that time program
+        self.sync_error_logged = 0.0
 
     # ---------------- mqtt ----------------
     def start(self):
@@ -452,6 +475,7 @@ class Extras:
             self.state.save()
         log.info("time programs backed up in %s", STATE_FILE)
 
+    @_locked
     def boost(self, key):
         base = SCHEDULES[key][0]
         with self.state.lock:
@@ -483,6 +507,7 @@ class Extras:
                  logic.format_slots(new_day))
         self.after_override(key)
 
+    @_locked
     def permanent(self, key, on):
         base = SCHEDULES[key][0]
         if not on:
@@ -508,6 +533,7 @@ class Extras:
         log.info("%s permanent operation on", key)
         self.after_override(key)
 
+    @_locked
     def restore_schedule(self, key, reason):
         base = SCHEDULES[key][0]
         with self.state.lock:
@@ -540,6 +566,131 @@ class Extras:
                     self.restore_schedule(key, "boost finished")
                 except Exception as err:
                     log.error("restore of %s failed, retrying: %s", key, err)
+
+    # ---------------- schedule helper sync (Home Assistant <-> controller) ----------------
+    def ha_config(self):
+        """(url, token) from extras_config.json, or None when the sync is not configured."""
+        try:
+            with open(CONFIG_FILE) as f:
+                cfg = json.load(f)
+            token_file = cfg.get("ha_token_file", "ha_token")
+            token_file = token_file if os.path.isabs(token_file) else os.path.join(ROOT, token_file)
+            with open(token_file) as f:
+                return cfg["ha_url"], f.read().strip()
+        except (OSError, KeyError, ValueError):
+            return None
+
+    def effective_slots(self, key, week):
+        """Slots of the controller's program as the user configured it, i.e. with an active boost / permanent override undone."""
+        ov = self.state.data["overrides"].get(key)
+        week = bytes(week) + bytes([logic.UNUSED] * max(0, 56 - len(week)))
+        if ov and ov["kind"] == "permanent":
+            week = bytes.fromhex(ov["original_week"])
+        elif ov:
+            week = week[:ov["day"] * 8] + bytes.fromhex(ov["original_day"]) + week[ov["day"] * 8 + 8:]
+        return logic.week_to_slots(week)
+
+    def raw_week(self, key):
+        a, b = self.values.get(f"{key}_zeitprogramm_roh_1", ""), self.values.get(f"{key}_zeitprogramm_roh_2", "")
+        return bytes.fromhex(a[:96] + b[:16]) if len(a) >= 96 and len(b) >= 16 else None
+
+    def sync_schedules(self):
+        cfg = self.ha_config()
+        if cfg is None:
+            return
+        try:
+            with HaClient(*cfg) as ha:
+                helpers = {h["name"]: h for h in ha.call({"type": "schedule/list"})}
+                for key in SCHEDULES:
+                    if time.time() >= self.sync_hold.get(key, 0):
+                        self.sync_one(ha, key, helpers.get(SCHEDULE_HELPERS[key][0]))
+        except (OSError, HaError) as err:
+            if time.time() - self.sync_error_logged > 600:
+                self.sync_error_logged = time.time()
+                log.warning("schedule sync: Home Assistant not reachable or request failed: %s", err)
+
+    def helper_payload(self, key, slots):
+        name, icon = SCHEDULE_HELPERS[key]
+        return {"name": name, "icon": icon, **logic.slots_to_helper(slots)}
+
+    @_locked
+    def sync_one(self, ha, key, helper):
+        raw = self.raw_week(key)
+        if raw is None:
+            return
+        device = self.effective_slots(key, raw)
+        with self.state.lock:
+            saved = self.state.data["sync"].get(key)
+        baseline = [[tuple(x) for x in day] for day in saved] if saved else None
+        if helper is None:                                           # first run: create the helper from the controller
+            ha.call({"type": "schedule/create", **self.helper_payload(key, device)})
+            self.set_baseline(key, device)
+            return log.info("schedule sync: created helper for %s", key)
+        wanted = logic.helper_to_slots(helper)
+        decision = logic.sync_decision(baseline, wanted, device)
+        if decision == "none":
+            if baseline != device:
+                self.set_baseline(key, device)
+            return
+        # polled values can be up to one poll cycle old: confirm with a fresh read before acting
+        device = self.effective_slots(key, self.read_week(key))
+        decision = logic.sync_decision(baseline, wanted, device)
+        if decision == "none":
+            return self.set_baseline(key, device)
+        if decision == "to_device":
+            try:
+                self.apply_to_device(key, wanted)
+            except ValueError as err:
+                log.warning("schedule sync: %s rejected (%s), helper reverted", key, err)
+                self.notify(ha, key, f"Das Zeitprogramm wurde nicht übernommen: {err}. Der Zeitplan wurde auf den Stand des Reglers zurückgesetzt.")
+                decision = "to_helper"
+            else:
+                self.set_baseline(key, wanted)
+                self.sync_hold[key] = time.time() + 90                  # polled values catch up after the next poll
+                if logic.slots_to_helper(wanted) != {d: helper.get(d, []) for d in logic.WEEKDAYS}:   # snapped to the 10 minute raster
+                    ha.call({"type": "schedule/update", "schedule_id": helper["id"], **self.helper_payload(key, wanted)})
+                return log.info("schedule sync: %s helper -> controller", key)
+        if decision in ("to_helper", "conflict"):
+            ha.call({"type": "schedule/update", "schedule_id": helper["id"], **self.helper_payload(key, device)})
+            self.set_baseline(key, device)
+            if decision == "conflict":
+                log.warning("schedule sync: %s changed on both sides, the controller wins", key)
+                self.notify(ha, key, "Zeitprogramm wurde gleichzeitig in Home Assistant und am Regler geändert. Der Stand des Reglers wurde übernommen.")
+            else:
+                log.info("schedule sync: %s controller -> helper", key)
+
+    def set_baseline(self, key, slots):
+        with self.state.lock:
+            self.state.data["sync"][key] = [[list(x) for x in day] for day in slots]
+            self.state.touch()
+
+    def apply_to_device(self, key, wanted):
+        """Write the helper's program to the controller; with an active override only the stored original is changed."""
+        week = logic.slots_to_week(wanted)                              # raises ValueError for more than 4 periods per day
+        base = SCHEDULES[key][0]
+        with self.state.lock:
+            ov = self.state.data["overrides"].get(key)
+        if ov and ov["kind"] == "permanent":
+            ov["original_week"] = week.hex()
+        else:
+            live = logic.week_to_slots(self.read_week(key))
+            for day in range(7):
+                if ov and ov["day"] == day:
+                    ov["original_day"] = week[day * 8:day * 8 + 8].hex()      # restored when the boost ends
+                elif live[day] != wanted[day]:
+                    self.write(base + 8 * day, week[day * 8:day * 8 + 8])
+        if ov:
+            with self.state.lock:
+                self.state.touch()
+                self.state.save()
+        self.forcepoll()
+
+    def notify(self, ha, key, message):
+        try:
+            ha.call({"type": "call_service", "domain": "persistent_notification", "service": "create",
+                     "service_data": {"title": f"Heizung Zeitprogramm ({key})", "message": message, "notification_id": f"vito_sync_{key}"}})
+        except HaError:
+            pass
 
     # ---------------- derived values ----------------
     def num(self, name):
@@ -719,6 +870,7 @@ class Extras:
     def ticker(self):
         time.sleep(15)
         last_history = 0.0
+        last_sync = 0.0
         while not self.stop.wait(15):
             try:
                 if time.time() - last_history > 6 * 3600:
@@ -734,6 +886,9 @@ class Extras:
                     self.schedule_state(key, now)
                 self.holiday(now)
                 self.check_overrides()
+                if time.time() - last_sync > SYNC_INTERVAL:
+                    last_sync = time.time()
+                    self.sync_schedules()
                 if time.time() - self.last_flush > 60:
                     self.state.save()
                     self.last_flush = time.time()
