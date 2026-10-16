@@ -72,9 +72,9 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 | `number.vito_warmwasser_solltemperatur` | Solltemperatur | primary | splitter |
 | `sensor.vito_warmwasser_speichertemperatur` | Speichertemperatur | primary | splitter |
 | `switch.vito_warmwasser_dauerbetrieb` | Dauerbetrieb (Zeitprogramm überbrückt) | primary | extras |
-| `switch.vito_warmwasser_boost` | Zusatzaufheizung | primary | extras |
+| `switch.vito_warmwasser_zusatzaufheizung` | Zusatzaufheizung | primary | extras |
 | `water_heater.vito_warmwasser` | (device name) | primary | splitter |
-| `number.vito_warmwasser_boost_dauer` | Dauer Zusatzaufheizung | config | extras |
+| `number.vito_warmwasser_zusatzaufheizung_dauer` | Dauer Zusatzaufheizung | config | extras |
 | `binary_sensor.vito_warmwasser_auslauftemperatur_sensorfehler` | Auslauftemperatur Sensorfehler | diagnostic | splitter |
 | `binary_sensor.vito_warmwasser_speichertemperatur_sensorfehler` | Speichertemperatur Sensorfehler | diagnostic | splitter |
 | `sensor.vito_warmwasser_ladepumpe_laufzeit_heute` | Ladepumpe Laufzeit heute | diagnostic | extras |
@@ -87,8 +87,8 @@ Home Assistant. Home Assistant sorts the entities of a device by category (contr
 | `binary_sensor.vito_zirkulationspumpe` | WW-Zirkulationspumpe | primary | splitter |
 | `binary_sensor.vito_zirkulation_zeitprogramm_aktiv` | Zeitprogramm | primary | extras |
 | `switch.vito_zirkulation_dauerbetrieb` | Dauerbetrieb (Zeitprogramm überbrückt) | primary | extras |
-| `switch.vito_zirkulation_boost` | Zusatzlauf | primary | extras |
-| `number.vito_zirkulation_boost_dauer` | Dauer Zusatzlauf | config | extras |
+| `switch.vito_zirkulation_zusatzlauf` | Zusatzlauf | primary | extras |
+| `number.vito_zirkulation_zusatzlauf_dauer` | Dauer Zusatzlauf | config | extras |
 | `sensor.vito_zirkulationspumpe_laufzeit_heute` | Pumpe Laufzeit heute | diagnostic | extras |
 | `sensor.vito_zirkulation_zeitprogramm` | Zeitplan (aktuell) | diagnostic | extras |
 

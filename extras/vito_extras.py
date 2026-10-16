@@ -69,9 +69,12 @@ SCHEDULE_HELPERS = {                                         # time program -> (
 }
 
 # time programs: key -> (base address, device key, label)
+# DHW / circulation: the switch that bridges the time program for a while (entity "<key>_<slug>", duration "<key>_<slug>_dauer")
+BOOST_SLUG = {"warmwasser": "zusatzaufheizung", "zirkulation": "zusatzlauf"}
 OBSOLETE_DISCOVERY = tuple((domain, f"{hk}_{name}") for hk in ("hk1", "hk2") for domain, name in (
     ("button", "boost"), ("number", "boost_dauer"), ("switch", "dauerbetrieb"), ("button", "zeitprogramm_zuruecksetzen"))) + tuple(
-    ("button", f"{key}_{name}") for key in ("warmwasser", "zirkulation") for name in ("boost", "zeitprogramm_zuruecksetzen"))
+    ("button", f"{key}_{name}") for key in ("warmwasser", "zirkulation") for name in ("boost", "zeitprogramm_zuruecksetzen")) + tuple(
+    (domain, f"{key}_{name}") for key in ("warmwasser", "zirkulation") for domain, name in (("switch", "boost"), ("number", "boost_dauer")))
 SWITCH_HOLD = 20.0                                           # seconds a command is shown before polled flags may override it
 SCHEDULES = {
     "hk1": (0x3000, "heizkreis_1", "Heizkreis 1"),
@@ -222,11 +225,12 @@ def entity_defs():
         what = "Zusatzlauf" if pump else "Zusatzaufheizung"
         add("binary_sensor", f"{key}_zeitprogramm_aktiv", device, "Zeitprogramm", icon="mdi:calendar-check",
             state_topic=f"{EXT}/{key}_zeitprogramm_aktiv")
-        add("switch", f"{key}_boost", device, what, icon="mdi:rocket-launch", state_topic=f"{EXT}/{key}_boost",
-            command_topic=f"{EXT}/{key}_boost/set")
-        add("number", f"{key}_boost_dauer", device, f"Dauer {what}",
+        slug = BOOST_SLUG[key]
+        add("switch", f"{key}_{slug}", device, what, icon="mdi:rocket-launch", state_topic=f"{EXT}/{key}_{slug}",
+            command_topic=f"{EXT}/{key}_{slug}/set")
+        add("number", f"{key}_{slug}_dauer", device, f"Dauer {what}",
             icon="mdi:timer-cog-outline", entity_category="config", min=10, max=360, step=10, mode="box",
-            unit_of_measurement="min", state_topic=f"{EXT}/{key}_boost_dauer", command_topic=f"{EXT}/{key}_boost_dauer/set")
+            unit_of_measurement="min", state_topic=f"{EXT}/{key}_{slug}_dauer", command_topic=f"{EXT}/{key}_{slug}_dauer/set")
         add("switch", f"{key}_dauerbetrieb", device, "Dauerbetrieb (Zeitprogramm überbrückt)",
             icon="mdi:calendar-lock", state_topic=f"{EXT}/{key}_dauerbetrieb", command_topic=f"{EXT}/{key}_dauerbetrieb/set")
     # solar, holiday
@@ -325,8 +329,8 @@ class Extras:
 
     def publish_static(self):
         with self.state.lock:
-            for key in SCHEDULES:
-                self.pub(f"{EXT}/{key}_boost_dauer", self.state.data["boost_dauer"].get(key, 30), force=True)
+            for key, slug in BOOST_SLUG.items():
+                self.pub(f"{EXT}/{key}_{slug}_dauer", self.state.data["boost_dauer"].get(key, 30), force=True)
                 self.bridged_state(key, force=True)
             for hk, text in self.state.data["names"].items():
                 self.pub(f"{EXT}/{hk}_name", text, force=True)
@@ -445,19 +449,17 @@ class Extras:
             return self.end_holiday()
         if name in ("urlaubsprogramm_beginn", "urlaubsprogramm_ende"):
             return self.set_holiday_date(name.endswith("beginn"), payload)
-        for key in SCHEDULES:
-            if name == f"{key}_boost_dauer":
+        for key, slug in BOOST_SLUG.items():
+            if name == f"{key}_{slug}_dauer":
                 minutes = max(10, min(360, int(round(float(payload) / 10.0)) * 10))
                 with self.state.lock:
                     self.state.data["boost_dauer"][key] = minutes
                     self.state.touch()
                 return self.pub(f"{EXT}/{name}", minutes, force=True)
-            if name == f"{key}_boost":
-                return self.boost(key) if action == "press" or payload.upper() == "ON" else self.end_boost(key)
+            if name == f"{key}_{slug}":
+                return self.boost(key) if payload.upper() == "ON" else self.end_boost(key)
             if name == f"{key}_dauerbetrieb":
                 return self.permanent(key, payload.upper() == "ON")
-            if name == f"{key}_zeitprogramm_zuruecksetzen":
-                return self.restore_schedule(key, "manual reset")
 
     def set_temperature(self, hk, payload):
         value = int(round(float(payload)))
@@ -951,7 +953,7 @@ class Extras:
             return
         kind = self.override_kind(key)
         self.pub(f"{EXT}/{key}_zeitprogramm_aktiv", "OFF" if kind else "ON", force=force)
-        self.pub(f"{EXT}/{key}_boost", "ON" if kind == "boost" else "OFF", force=force)
+        self.pub(f"{EXT}/{key}_{BOOST_SLUG[key]}", "ON" if kind == "boost" else "OFF", force=force)
         self.pub(f"{EXT}/{key}_dauerbetrieb", "ON" if kind == "permanent" else "OFF", force=force)
 
     def holiday(self, now):

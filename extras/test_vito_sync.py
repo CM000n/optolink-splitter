@@ -133,33 +133,33 @@ class BoostSwitchTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_switch_on_starts_and_off_ends_the_boost(self):
-        self.x.handle_command("warmwasser_boost/set", "ON")
+        self.x.handle_command("warmwasser_zusatzaufheizung/set", "ON")
         self.assertEqual(self.x.override_kind("warmwasser"), "boost")
-        self.assertEqual(self.x.published["VitoExt/warmwasser_boost"], "ON")
+        self.assertEqual(self.x.published["VitoExt/warmwasser_zusatzaufheizung"], "ON")
         self.assertEqual(self.x.published["VitoExt/warmwasser_zeitprogramm_aktiv"], "OFF")
-        self.x.handle_command("warmwasser_boost/set", "OFF")
+        self.x.handle_command("warmwasser_zusatzaufheizung/set", "OFF")
         self.assertIsNone(self.x.override_kind("warmwasser"))
         self.assertEqual(bytes(self.x.weeks["warmwasser"]), self.original)               # the time program is restored
-        self.assertEqual(self.x.published["VitoExt/warmwasser_boost"], "OFF")
+        self.assertEqual(self.x.published["VitoExt/warmwasser_zusatzaufheizung"], "OFF")
         self.assertEqual(self.x.published["VitoExt/warmwasser_zeitprogramm_aktiv"], "ON")
 
     def test_switch_off_without_a_boost_writes_nothing(self):
-        self.x.handle_command("zirkulation_boost/set", "OFF")
+        self.x.handle_command("zirkulation_zusatzlauf/set", "OFF")
         self.assertEqual(self.x.writes, [])
-        self.assertEqual(self.x.published["VitoExt/zirkulation_boost"], "OFF")
+        self.assertEqual(self.x.published["VitoExt/zirkulation_zusatzlauf"], "OFF")
 
-    def test_the_old_press_command_still_starts_a_boost(self):
-        self.x.handle_command("zirkulation_boost/press", "PRESS")
-        self.assertEqual(self.x.override_kind("zirkulation"), "boost")
+    def test_the_duration_is_kept_in_steps_of_ten_minutes(self):
+        self.x.handle_command("zirkulation_zusatzlauf_dauer/set", "47")
+        self.assertEqual(self.x.published["VitoExt/zirkulation_zusatzlauf_dauer"], "50")
 
     def test_permanent_operation_off_does_not_end_a_boost_and_boost_off_does_not_end_permanent(self):
-        self.x.handle_command("warmwasser_boost/set", "ON")
+        self.x.handle_command("warmwasser_zusatzaufheizung/set", "ON")
         self.x.handle_command("warmwasser_dauerbetrieb/set", "OFF")
         self.assertEqual(self.x.override_kind("warmwasser"), "boost")
-        self.x.handle_command("warmwasser_boost/set", "OFF")
+        self.x.handle_command("warmwasser_zusatzaufheizung/set", "OFF")
         self.x.handle_command("warmwasser_dauerbetrieb/set", "ON")
         self.assertEqual(self.x.override_kind("warmwasser"), "permanent")
-        self.x.handle_command("warmwasser_boost/set", "OFF")
+        self.x.handle_command("warmwasser_zusatzaufheizung/set", "OFF")
         self.assertEqual(self.x.override_kind("warmwasser"), "permanent")
         self.x.handle_command("warmwasser_dauerbetrieb/set", "OFF")
         self.assertIsNone(self.x.override_kind("warmwasser"))
