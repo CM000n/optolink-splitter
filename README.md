@@ -5,7 +5,18 @@ Make your Viessmann heating locally available via MQTT and TCP/IP while keeping 
 
 **Use this software at your own risk.**
 
-> **Fork note:** this fork adds a complete, tested Home Assistant setup for a Vitotronic 200 (`VScotHO1`, device ident `0x20CB`) with grouped devices, icons, controls (`climate`, `water_heater`, numbers, selects), derived entities and a companion service. See [docs/vscotho1.md](docs/vscotho1.md). It also extends `homeassistant_publish.py` (sub-devices, per-entity metadata, `--prune`).
+## :wrench: About this fork
+This fork of [philippoo66/optolink-splitter](https://github.com/philippoo66/optolink-splitter) adds a complete, tested Home Assistant setup for a Viessmann **Vitotronic 200** (`VScotHO1`, device ident `0x20CB`: two heating circuits, DHW, circulation, solar) that replaces the cloud based ViCare integration. The splitter core (Optolink protocols, serial handling, MQTT / TCP) is unchanged. Full guide: **[docs/vscotho1.md](docs/vscotho1.md)**, entity list: [docs/vscotho1-entities.md](docs/vscotho1-entities.md).
+
+What is added:
+- `homeassistant_poll_list.py`: the datapoints, 135 MQTT entities in 8 devices (installation, boiler, DHW, circulation, solar, two heating circuits) with names and icons like the ViCare integration, and the controls (`climate`, `water_heater`, numbers, selects, buttons).
+- `homeassistant_publish.py` (extended): sub-devices (`devices`), per-entity overrides (`entity_meta`, `discovery: False`) and `--prune` to remove stale retained discovery configs.
+- `extras/` (service `optolink-extras`): derived entities (burner statistics, heating curve target, runtimes, fault history), climate presets, boost / permanent operation and reset of the four time programs, end of the holiday program, and an optional two-way sync of the time programs with Home Assistant `schedule` helpers. Writes go through a whitelist and are read back; unit tests in `extras/test_*.py`.
+- `systemd/` unit files for autostart, `tools/` (Optolink probe / scan, MQTT command helper, Vitoconnect capture).
+
+Upstream: small fixes found on the way were submitted as pull requests ([#247](https://github.com/philippoo66/optolink-splitter/pull/247), [#248](https://github.com/philippoo66/optolink-splitter/pull/248), [#249](https://github.com/philippoo66/optolink-splitter/pull/249), [#250](https://github.com/philippoo66/optolink-splitter/pull/250)).
+
+Security: upstream enables the TCP/IP port (65234, all interfaces, no authentication) by default and `Vito/cmnd` can write any address. Set `tcpip_port = None` and restrict the MQTT broker, see [Controls and safety](docs/vscotho1.md#controls-and-safety).
 
 For latest developments always check the [Version-Log](https://github.com/philippoo66/optolink-splitter/wiki/990-Version-Log)
 
@@ -30,6 +41,7 @@ Still **TESTERS WANTED with KW device and Vitoconnnect!**
 
 
 ## 📌 Table of Contents
+- [About this fork](#wrench-about-this-fork)
 - [Introduction](#rocket-introduction)
 - [Software Requirements](#file_folder-software-requirements)
 - [Hardware Requirements](#desktop_computerhardware-requirements)

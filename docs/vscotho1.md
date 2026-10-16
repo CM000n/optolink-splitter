@@ -122,8 +122,13 @@ the ViCare integration. Highlights:
 ## Controls and safety
 
 * Writes of the splitter go through its `<topic>/<datapoint>/set` topics; the datapoint's address, length, scale and sign
-  come from the poll list. **Anyone who can publish to the MQTT broker can write to every poll-list datapoint**, so protect
-  the broker with credentials/ACLs. Keep `tcpip_port = None` unless you need it.
+  come from the poll list. **Anyone who can publish to the MQTT broker can write to every poll-list datapoint.** Worse,
+  `<topic>/cmnd` accepts `write`, `writeraw`, `raw` and `request` for **any** address, not only for poll-list datapoints.
+  Protect the broker (credentials and ACLs): only the splitter / extras account may publish `Vito/cmnd`, `Vito/resp`, the
+  state topics below `Vito/` and `VitoExt/` and the discovery configs; Home Assistant needs read access to those plus write access
+  to `Vito/+/set`, `VitoExt/+/set` and `VitoExt/+/press` only; nobody else needs access.
+* The TCP/IP interface is **enabled by default upstream** (port 65234 on all interfaces, no authentication, same write power as
+  `cmnd`). Set `tcpip_port = None` unless you need it.
 * `extras/vito_extras.py` only writes to a whitelist: the set point registers, party / eco flags, the days of the four time programs
   and the holiday dates. Time program writes are read back and compared.
 * Boost and permanent operation work like the ViCare integration did (they rewrite the time program): the original day / week is
