@@ -13,6 +13,7 @@ What is added:
 - `homeassistant_publish.py` (extended): sub-devices (`devices`), per-entity overrides (`entity_meta`, `discovery: False`) and `--prune` to remove stale retained discovery configs.
 - `extras/` (service `optolink-extras`): derived entities (burner statistics, heating curve target, runtimes, fault history), climate presets, boost / permanent operation and reset of the four time programs, end of the holiday program, and an optional two-way sync of the time programs with Home Assistant `schedule` helpers. Writes go through a whitelist and are read back; unit tests in `extras/test_*.py`.
 - `systemd/` unit files for autostart, `tools/` (Optolink probe / scan, MQTT command helper, Vitoconnect capture).
+- `docs/advanced-heating-control.md` + `docs/examples/heizplan_vito.yaml`: Home Assistant package that lets room thermostats controlled by the blueprint Advanced Heating Control follow the Vitotronic (set points, Komfort- / Sparbetrieb, operating mode).
 
 Upstream: small fixes found on the way were submitted as pull requests ([#247](https://github.com/philippoo66/optolink-splitter/pull/247), [#248](https://github.com/philippoo66/optolink-splitter/pull/248), [#249](https://github.com/philippoo66/optolink-splitter/pull/249), [#250](https://github.com/philippoo66/optolink-splitter/pull/250)).
 
