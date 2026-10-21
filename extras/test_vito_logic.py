@@ -213,6 +213,17 @@ class HeizmodusTests(unittest.TestCase):
         self.assertFalse(v.zeitprogramm_aktiv(0, False, False))     # off
         self.assertIsNone(v.zeitprogramm_aktiv(None, False, False))
 
+    def test_hvac_action_of_a_circuit(self):
+        self.assertEqual(v.hvac_action(2, True, 40), "heating")
+        self.assertEqual(v.hvac_action("4", True, 12.5), "heating")
+        self.assertEqual(v.hvac_action(2, False, 40), "idle")          # burner runs for DHW or the other circuit
+        self.assertEqual(v.hvac_action(2, True, 0), "idle")            # pump runs, burner is off
+        self.assertEqual(v.hvac_action(3, True, None), "idle")
+        self.assertEqual(v.hvac_action(0, True, 40), "off")            # Aus
+        self.assertEqual(v.hvac_action("1", True, 40), "off")          # Nur Warmwasser aktiv
+        self.assertIsNone(v.hvac_action(None, True, 40))
+        self.assertIsNone(v.hvac_action("x", True, 40))
+
 
 if __name__ == "__main__":
     unittest.main()

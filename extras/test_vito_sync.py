@@ -306,5 +306,34 @@ class SyncTests(unittest.TestCase):
         self.assertEqual(logic.decode_day(bytes.fromhex(self.x.state.data["overrides"]["hk1"]["original_day"])), [(360, 1200)])
 
 
+class HvacActionTests(unittest.TestCase):
+    """The climate entities show what their own circuit does, not what the burner does."""
+
+    def setUp(self):
+        self.x = FakeExtras()
+
+    def test_each_circuit_has_its_own_action(self):
+        self.x.values.update({"hk1_betriebsart": "1", "hk2_betriebsart": "2", "hk1_pumpe": "OFF", "hk2_pumpe": "ON"})
+        self.x.values["brennermodulation"] = "35"
+        self.x.recompute("brennermodulation", 1e9)
+        self.assertEqual(self.x.published["VitoExt/hk1_hvac_action"], "off")       # floor heating switched off, burner runs
+        self.assertEqual(self.x.published["VitoExt/hk2_hvac_action"], "heating")
+        self.x.values["brennermodulation"] = "0"
+        self.x.recompute("brennermodulation", 1e9)
+        self.assertEqual(self.x.published["VitoExt/hk2_hvac_action"], "idle")
+        self.assertEqual(self.x.published["VitoExt/hk1_hvac_action"], "off")
+
+    def test_pump_and_mode_changes_update_the_action(self):
+        self.x.values.update({"brennermodulation": "20", "hk1_betriebsart": "2", "hk1_pumpe": "OFF"})
+        self.x.recompute("hk1_pumpe", 1e9)
+        self.assertEqual(self.x.published["VitoExt/hk1_hvac_action"], "idle")      # burner runs for DHW, the pump is off
+        self.x.values["hk1_pumpe"] = "ON"
+        self.x.recompute("hk1_pumpe", 1e9)
+        self.assertEqual(self.x.published["VitoExt/hk1_hvac_action"], "heating")
+        self.x.values["hk1_betriebsart"] = "0"
+        self.x.recompute("hk1_betriebsart", 1e9)
+        self.assertEqual(self.x.published["VitoExt/hk1_hvac_action"], "off")
+
+
 if __name__ == "__main__":
     unittest.main()

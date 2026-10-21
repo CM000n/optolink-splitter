@@ -788,6 +788,8 @@ class Extras:
         now = datetime.fromtimestamp(ts)
         if name == "brennermodulation":
             self.burner(now, ts, fresh)
+            for hk in ("hk1", "hk2"):
+                self.hvac_action(hk)
         if name == "brennerstarts":
             self.starts(now, ts, fresh)
         for key, (topic, _, _, cap) in RUNTIME.items():
@@ -806,6 +808,7 @@ class Extras:
                 self.curve(hk)
                 self.preset(hk)
                 self.heizmodus(hk)
+                self.hvac_action(hk)
                 self.program_switches(hk)
         if name in ("solar_kollektortemperatur", "solar_speichertemperatur"):
             k, s = self.num("solar_kollektortemperatur"), self.num("solar_speichertemperatur")
@@ -930,6 +933,12 @@ class Extras:
         program = logic.program_name(self.values[f"{hk}_programm"])
         self.pub(f"{EXT}/{hk}_preset", logic.preset_from(program, self.values.get(f"{hk}_partybetrieb") == "ON",
                                                         self.values.get(f"{hk}_sparbetrieb") == "ON"))
+
+    def hvac_action(self, hk):
+        """Action of the climate entity: off / idle / heating of this circuit (not the burner state, which is the same for both)."""
+        action = logic.hvac_action(self.values.get(f"{hk}_betriebsart"), self.values.get(f"{hk}_pumpe") == "ON", self.num("brennermodulation"))
+        if action:
+            self.pub(f"{EXT}/{hk}_hvac_action", action)
 
     def heizmodus(self, hk):
         """"Aktiver Heizmodus" like the ViCare app (Aus, Normal, Reduziert, Komfortbetrieb, Sparbetrieb, or the phase of the

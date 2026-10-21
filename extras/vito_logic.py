@@ -130,6 +130,19 @@ def zeitprogramm_aktiv(mode, party, eco):
         return None
 
 
+def hvac_action(mode, pump_on, modulation):
+    """hvac_action of a heating circuit: 'off' while its heating is switched off (operating mode Aus / Nur Warmwasser aktiv),
+    'heating' while its circulation pump runs and the burner modulates, otherwise 'idle'; None if the mode is unknown.
+    The burner alone says nothing about a circuit, it also runs for the DHW cylinder and for the other circuit."""
+    try:
+        mode = int(float(mode))
+    except (TypeError, ValueError):
+        return None
+    if mode in (0, 1):
+        return "off"
+    return "heating" if pump_on and (modulation or 0) > 0 else "idle"
+
+
 def format_slots(day):
     return [f"{s // 60:02d}:{s % 60:02d}-{e // 60:02d}:{e % 60:02d}" for s, e in decode_day(day)]
 

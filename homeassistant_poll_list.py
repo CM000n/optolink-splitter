@@ -89,7 +89,6 @@ HVAC_FROM_MODE = (
     "{% set m = {'0':'off','1':'off','2':'auto','3':'off','4':'heat'} %}{{ m.get(value | string | trim, 'off') }}"
 )
 HVAC_TO_MODE = "{% set m = {'off':3,'auto':2,'heat':4} %}{{ m[value] }}"
-ACTION_FROM_MODULATION = "{{ 'heating' if value | float(0) > 0 else 'idle' }}"
 # 7 days x 4 byte (little endian Wh) -> kWh, first 7 daily values of the 28 byte block at 0xCF30 (today .. 6 days ago)
 SOLAR_7D = (
     "{% set ns = namespace(t=0) %}{% for i in range(7) %}{% set c = value[i*8:i*8+8] %}"
@@ -602,8 +601,7 @@ for n, B in HK_BASE.items():
         preset_modes=["comfort", "eco", "home", "sleep"],
         preset_mode_state_topic="VitoExt/" + p + "preset",
         preset_mode_command_topic="VitoExt/" + p + "preset/set",
-        action_topic="{mqtt_base}/brennermodulation",
-        action_template=ACTION_FROM_MODULATION,
+        action_topic="VitoExt/" + p + "hvac_action",
         temperature_unit="C",
         min_temp=3,
         max_temp=37,

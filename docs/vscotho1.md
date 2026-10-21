@@ -111,7 +111,7 @@ the ViCare integration. Highlights:
 * Everything the ViCare integration offered for this boiler: temperatures, burner (modulation, starts, hours, cycling,
   starts last hour / today, run time today, last run / pause), pumps and their run time today, heating curve target and
   deviation, time program state, sensor status, frost protection, holiday program, solar yields, DHW and circulation.
-* Controls: set points, heating curve, operating mode (select), `climate` per circuit (mode, set point, presets), DHW
+* Controls: set points, heating curve, operating mode (select), `climate` per circuit (mode, set point, presets; the action is `off` while the circuit's heating is switched off, `heating` while its pump runs and the burner modulates, otherwise `idle`, not the plain burner state), DHW
   `water_heater`, switches "Komfortbetrieb" / "Sparbetrieb" per heating circuit (like the ViCare app), the switches "Zusatzaufheizung" (DHW) / "Zusatzlauf" (circulation) and "Dauerbetrieb"
   that bridge their time programs, holiday program (date entities for start and end like in the app, plus "beenden").
 * More than the API: exhaust gas temperature, the controller's flow set point, the three outside temperature values,
