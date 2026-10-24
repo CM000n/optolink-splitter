@@ -224,6 +224,17 @@ class HeizmodusTests(unittest.TestCase):
         self.assertIsNone(v.hvac_action(None, True, 40))
         self.assertIsNone(v.hvac_action("x", True, 40))
 
+    def test_schedule_text_of_dhw_and_circulation(self):
+        until = datetime(2026, 10, 12, 14)
+        self.assertEqual(v.schedule_text("Warmwasser", "Zusatzaufheizung", True, until), "Warmwasser bis 14:00")
+        self.assertEqual(v.schedule_text("Zirkulation", "Zusatzlauf", False, datetime(2026, 10, 12, 17)), "Aus bis 17:00")
+        self.assertEqual(v.schedule_text("Zirkulation", "Zusatzlauf", True, None), "Zirkulation")
+        self.assertEqual(v.schedule_text("Zirkulation", "Zusatzlauf", False, None), "Aus")
+        self.assertEqual(v.schedule_text("Warmwasser", "Zusatzaufheizung", True, until, "boost", datetime(2026, 10, 12, 15, 30)),
+                         "Zusatzaufheizung bis 15:30")
+        self.assertEqual(v.schedule_text("Warmwasser", "Zusatzaufheizung", True, until, "boost"), "Zusatzaufheizung bis 14:00")
+        self.assertEqual(v.schedule_text("Zirkulation", "Zusatzlauf", True, None, "permanent"), "Dauerbetrieb")
+
 
 if __name__ == "__main__":
     unittest.main()

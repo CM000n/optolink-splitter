@@ -335,5 +335,31 @@ class HvacActionTests(unittest.TestCase):
         self.assertEqual(self.x.published["VitoExt/hk1_hvac_action"], "off")
 
 
+class ProgramTextTests(unittest.TestCase):
+    """"Aktives Programm" of DHW and circulation."""
+
+    def setUp(self):
+        self.x = FakeExtras()                                     # every program: 04:00-23:00
+
+    def text(self, key, when):
+        self.x.schedule_state(key, when)
+        return self.x.published[f"VitoExt/{key}_programm"]
+
+    def test_time_program(self):
+        self.assertEqual(self.text("warmwasser", datetime(2026, 10, 12, 10, 0)), "Warmwasser bis 23:00")
+        self.assertEqual(self.text("zirkulation", datetime(2026, 10, 12, 10, 0)), "Zirkulation bis 23:00")
+        self.assertEqual(self.text("warmwasser", datetime(2026, 10, 12, 23, 30)), "Aus bis 04:00")
+        self.assertEqual(self.text("zirkulation", datetime(2026, 10, 12, 3, 0)), "Aus bis 04:00")
+
+    def test_boost_and_permanent_operation(self):
+        until = datetime(2026, 10, 12, 15, 30)
+        self.x.state.data["overrides"]["warmwasser"] = {"kind": "boost", "until": until.timestamp()}
+        self.assertEqual(self.text("warmwasser", datetime(2026, 10, 12, 15, 0)), "Zusatzaufheizung bis 15:30")
+        self.x.state.data["overrides"]["zirkulation"] = {"kind": "permanent"}
+        self.assertEqual(self.text("zirkulation", datetime(2026, 10, 12, 15, 0)), "Dauerbetrieb")
+        self.x.state.data["overrides"]["zirkulation"] = {"kind": "boost", "until": until.timestamp()}
+        self.assertEqual(self.text("zirkulation", datetime(2026, 10, 12, 15, 0)), "Zusatzlauf bis 15:30")
+
+
 if __name__ == "__main__":
     unittest.main()

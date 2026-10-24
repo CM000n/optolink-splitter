@@ -121,6 +121,19 @@ def heizmodus_text(mode, phase, party, eco, until):
     return name + (f" bis {until:%H:%M}" if until else "")
 
 
+def schedule_text(label, boost_label, on, until, override=None, override_until=None):
+    """Active program of DHW / circulation like the heating circuits' "Aktiver Heizmodus": "Warmwasser bis 14:00" while the time
+    program is on, "Aus bis 17:00" outside its periods, "Zusatzaufheizung bis 15:30" during a boost and "Dauerbetrieb" while a
+    permanent operation bridges the time program. until: end of the current phase (None if it never changes)."""
+    if override == "permanent":
+        return "Dauerbetrieb"
+    if override == "boost":
+        end = override_until or until
+        return f"{boost_label} bis {end:%H:%M}" if end else boost_label
+    name = label if on else "Aus"
+    return f"{name} bis {until:%H:%M}" if until else name
+
+
 def zeitprogramm_aktiv(mode, party, eco):
     """True while the time program controls the heating circuit (operating mode 'Heizung & Warmwasser aktiv'), False when it is
     switched off or paused by a permanent mode, comfort or eco; None if the mode is unknown."""

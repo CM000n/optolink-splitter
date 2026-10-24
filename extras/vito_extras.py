@@ -83,6 +83,7 @@ SCHEDULES = {
     "zirkulation": (0x2200, "zirkulation", "Zirkulation"),
 }
 HK_BASE = {"hk1": 0x3000, "hk2": 0x4000}
+PROGRAM_LABEL = {"warmwasser": ("Warmwasser", "Zusatzaufheizung"), "zirkulation": ("Zirkulation", "Zusatzlauf")}   # "Aktives Programm" texts
 RUNTIME = {  # key -> (topic of the on/off state, device key, entity name, max gap in seconds)
     "brenner": ("brennermodulation", "brenner", "Laufzeit heute", 30),
     "interne_kesselpumpe": ("interne_kesselpumpe", "kessel", "Interne Kesselpumpe Laufzeit heute", 120),
@@ -221,6 +222,8 @@ def entity_defs():
             json_attributes_topic=f"{EXT}/{key}_zeitprogramm/attr", **diag)
         if key.startswith("hk"):    # the heating circuits have the operating mode and comfort / eco like the ViCare app
             continue                # instead of the boost / permanent operation of the old custom integration (time program rewrite)
+        add("sensor", f"{key}_programm", device, "Aktives Programm", icon="mdi:format-list-bulleted-type",
+            state_topic=f"{EXT}/{key}_programm")
         pump = key == "zirkulation"
         what = "Zusatzlauf" if pump else "Zusatzaufheizung"
         add("binary_sensor", f"{key}_zeitprogramm_aktiv", device, "Zeitprogramm", icon="mdi:calendar-check",
@@ -989,6 +992,12 @@ class Extras:
                  "override_bis": datetime.fromtimestamp(ov["until"]).isoformat(timespec="minutes") if ov and "until" in ov else None}
         self.pub(f"{EXT}/{key}_zeitprogramm", state)
         self.pub(f"{EXT}/{key}_zeitprogramm/attr", attrs)
+        if key in PROGRAM_LABEL:
+            label, boost_label = PROGRAM_LABEL[key]
+            until = logic.next_switch(logic.week_to_slots(week), now)
+            self.pub(f"{EXT}/{key}_programm", logic.schedule_text(
+                label, boost_label, on, until, ov["kind"] if ov else None,
+                datetime.fromtimestamp(ov["until"]) if ov and "until" in ov else None))
 
     # ---------------- housekeeping ----------------
     def ticker(self):
